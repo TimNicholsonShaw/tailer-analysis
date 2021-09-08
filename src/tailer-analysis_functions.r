@@ -1,5 +1,6 @@
 library(tidyverse)
 
+
 dfBuilder <- function(files, grouping){
   # There's gotta be a better way to do this, please tell me at timnicholsonshaw@gmail.com
   # Prep dataframe
@@ -51,7 +52,7 @@ cumulativeTailPlotter <- function(df, gene, start, stop, gimme=FALSE, show_legen
   out$Pos <- as.numeric(out$Pos)
   out=out[-1,] # drop that weird first row
 
-  if (gimme) {
+  if (gimme) { # for debugging
     return(out)
   }
 
@@ -119,6 +120,13 @@ cumulativeTailPlotter <- function(df, gene, start, stop, gimme=FALSE, show_legen
 		strip.text.y = element_text(margin = 
 			margin(0, 0.08, 0, 0.08, "cm"))
 		) +
+
+  # Pretty segments
+  	geom_segment(aes(x=stop,xend=stop,
+      y=ymin, 
+      yend=ymax), 
+      size=0.5) +
+
   
   #Colors
   #scale_fill_manual(values=linecolors) +
@@ -138,3 +146,157 @@ cumulativeTailPlotter <- function(df, gene, start, stop, gimme=FALSE, show_legen
 
      
   }
+
+tail_bar_grapher <- function(df, gene, start, stop, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE) {
+  df <- filter(df, Gene_Name==gene) # Take one gene
+
+  #Pre-populate dataframe
+  out <- data.frame(Pos="", reads_at_end="", reads_start_A="", reads_start_C="", reads_start_G="", reads_start_T="", Sample="", Condition="")
+
+  for (sample in unique(df$Sample)){
+    #save total number of reads for that gene in that sample
+    total <- sum(filter(df, Sample==sample)$Count)
+
+    for (i in c(start:stop)){ #loop through region of interest
+      #save total number of reads that mapped to that end
+      reads_at_end <- sum(filter(df, Sample==sample, Three_End==i)$Count)
+      
+      #save how many reads have a tail that starts with each nucleotide
+      reads_start_A <- sum(filter(df, Sample==sample, Three_End==i, startsWith(Tail_Sequence, "A"))$Count)
+      reads_start_C <- sum(filter(df, Sample==sample, Three_End==i, startsWith(Tail_Sequence, "C"))$Count)
+      reads_start_G <- sum(filter(df, Sample==sample, Three_End==i, startsWith(Tail_Sequence, "G"))$Count)
+      reads_start_T <- sum(filter(df, Sample==sample, Three_End==i, startsWith(Tail_Sequence, "T"))$Count)
+      
+      #add to out df
+      out <- rbind(out, c(i, reads_at_end/total, reads_start_A/total, reads_start_C/total, 
+                          reads_start_G/total, reads_start_T/total, 
+                          sample, filter(df, Sample==sample)$Grouping[1]))
+
+      # Convert columns to numeric types
+      out$reads_at_end = as.numeric(out$reads_at_end)
+      out$reads_start_A = as.numeric(out$reads_start_A)
+      out$reads_start_C = as.numeric(out$reads_start_C)
+      out$reads_start_G = as.numeric(out$reads_start_G)
+      out$reads_start_T = as.numeric(out$reads_start_T)
+      out$Pos = as.numeric(out$Pos)
+    }
+  
+  }
+  if (gimme){ # for debugging
+    return(out)
+  }
+
+    #################### Data Pre-processing #######################
+  plt <- out[-1,] %>%
+    dplyr::group_by(Condition, Pos) %>%
+    dplyr::summarise(reads_at_end=mean(reads_at_end),
+                     reads_start_A=mean(reads_start_A),
+                     reads_start_C=mean(reads_start_C),
+                     reads_start_G=mean(reads_start_G),
+                     reads_start_T=mean(reads_start_T)) %>%
+
+    pivot_longer(cols=c(reads_start_A, reads_start_C, reads_start_G, reads_start_T, reads_at_end))
+
+    plt$name <- factor(plt$name, levels=c('reads_start_A', 'reads_start_C', 'reads_start_G', 'reads_start_T', 'reads_at_end'))
+    plt$name <- recode_factor(plt$name, reads_start_A="A",
+                              reads_start_C="C",
+                              reads_start_G="G",
+                              reads_start_T="T",
+                              reads_at_end="No Tail")
+    
+  ######################### Plotting ############################
+  plt <- plt %>%
+
+    # main bar graph
+    ggplot(aes(x=Pos, y=value, color=name, fill=name)) +
+    geom_bar(stat='identity') +
+    facet_grid(rows=vars(Condition), switch="y") +
+
+    # themeing
+    theme(axis.text=element_text(family="Helvetica", size=12),
+          axis.line=element_line(size=0.5),
+          axis.ticks.length=unit(0.1, "cm"),
+          axis.ticks=element_line(size=0.5),
+          axis.title=element_text(family="Helvetica", face="bold",
+                                  size=16),
+          legend.text=element_text(family="Helvetica", size=8),
+          legend.title=element_blank(),
+          legend.key.height=unit(0.1, "cm"),
+          legend.key.width=unit(0.4, "cm")) +
+
+    theme(strip.background = element_rect(fill="grey", linetype=1,
+                                          size=0.3), 
+          strip.text = element_text(size=16, family="Helvetica",
+                                    color="black"), 
+          strip.text.x = element_text(margin = margin(0.05, 0,
+                                                      0.05, 0, "cm")),
+          strip.text.y = element_text(margin = 
+                                        margin(0, 0.08, 0, 0.08, "cm"))
+    ) +
+  
+  # Axes
+  scale_x_continuous(name="Position", 
+		breaks=seq(start, stop, 2),
+		expand=c(0,0),
+		limits=c(start,stop)) +
+  scale_y_continuous(name="Fraction", 
+		breaks=seq(0.1, 1, 0.2), 
+		expand=c(0,0), 
+		limits=c(ymin, ymax),
+		position = "right"
+		) +
+  
+  # Some segments
+  geom_segment(aes(x=stop,xend=stop,
+                     y=ymin, 
+                     yend=ymax), 
+                 size=0.3) +
+    geom_segment(aes(x=start,xend=start,
+                     y=ymin, 
+                     yend=ymax), 
+                 size=0.3) +
+    geom_segment(aes(x=start,xend=stop,
+                     y=ymin, 
+                     yend=ymin), 
+                 size=0.3) +
+    geom_segment(aes(x=start,xend=stop,
+                     y=ymax, 
+                     yend=ymax), 
+                 size=0.3) +
+
+  # Custom colors
+  # scale_fill_manual(values=AUCGcolors)
+
+
+  # options
+  if (show_legend == FALSE){
+    plt <- plt + theme(legend.position = "none")
+  }
+
+  if (dots) { #doesn't work yet
+    #plt <- plt + geom_point(data=out[-1,], aes(x=Pos, y=reads_at_end))
+  }
+
+  return(plt) }
+
+
+
+
+
+
+
+
+tail_logo_grapher <- function(df, gene, xmin=0, xmax=10, ymin=0, ymax=1) {
+  df <- filter(df, Gene_Name==gene) # Take one gene
+  print('bloop')
+}
+
+tail_pt_nuc_grapher <- function(){
+  pass
+}
+
+discover_candidates <- function(){
+  pass
+}
+
+ 
