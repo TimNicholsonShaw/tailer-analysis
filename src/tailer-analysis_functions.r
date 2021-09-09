@@ -1,4 +1,7 @@
 library(tidyverse)
+library(ggseqlogo)
+library(cowplot)
+
 
 
 dfBuilder <- function(files, grouping){
@@ -286,9 +289,106 @@ tail_bar_grapher <- function(df, gene, start, stop, gimme=F, ymin=0, ymax=1, AUC
 
 
 
-tail_logo_grapher <- function(df, gene, xmin=0, xmax=10, ymin=0, ymax=1) {
+tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F) {
+
+  # So percentages can be entered as parameters as well as fractions
+  if (ymax>1){
+    ymax = ymax/100
+  }
+  if (ymin>1){
+    ymin = ymin/100
+  }
+
+  ############ data pre-processing #################
   df <- filter(df, Gene_Name==gene) # Take one gene
-  print('bloop')
+
+  out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
+
+  for (sample in unique(df$Sample)){
+    #save total number of reads for that gene in that sample
+    total <- sum(filter(df, Sample==sample)$Count)
+
+    for (i in c(xmin:xmax)) {#loop through tail lengths of interest
+      for (nuc in c("A", "C", "G", "T")) {
+        # Find frequency of each nucleotide at each position
+        frequency <- sum(filter(df, Sample==sample, substr(Tail_Sequence, i, i) == nuc)$Count)/total
+
+        # Add to out df
+        out <- rbind(out, c(i, sample, filter(df, Sample==sample)$Grouping[1], nuc, frequency))
+      }
+    }
+  }
+  # futz with columns
+  out=out[-1,]
+  out$Pos <- as.numeric(out$Pos)
+  out$Frequency <- as.numeric(out$Frequency)
+  
+  if(gimme){ # debugging
+    return(out)
+  }
+
+
+  # calculate out nucleotide frequencies
+  out <-out %>%
+    group_by(Condition, Pos, Nuc) %>% 
+    summarise(freq_avg = mean(Frequency)) %>%
+    ungroup()
+  plot_list <- list() # to be added to for cowplot
+
+  conditions <- c(unique(out$Condition))
+
+  for (i in 1:length(conditions)){
+    plot_df <- out %>% 
+                filter(Condition==conditions[i]) %>% # Look at singular condition
+                pivot_wider(id_cols=Nuc, names_from=Pos, values_from=freq_avg) %>% 
+                {. ->> nucs} %>% # Save intermediate to get nucleotide names
+                select(-Nuc) %>% # Remove Nuc column
+                as.matrix(nrow=4, ncol=ncol(nucs)-1) # ggseqlogo needs a probability matrix
+    rownames(plot_df) <- nucs$Nuc # Names from Nuc intermediate makes sure we don't get them out of order
+
+    # Add plot to plotlist
+    plot_list[[i]] <- ggplot() + 
+      geom_logo(data=plot_df, method='custom', font='roboto_bold') + 
+      coord_cartesian() +
+
+      # Themeing
+      theme_classic() +
+      theme(
+        axis.text=element_text(family="Helvetica", size=12),
+        axis.text.x=element_text(hjust=0.5),
+        axis.line=element_line(size=0.3),
+        axis.ticks.length=unit(0.1, "cm"),
+        axis.ticks=element_line(size=0.3),
+        axis.title=element_text(family="Helvetica", 
+          face="bold", size=16),
+        legend.text=element_text(family="Helvetica", size=8),
+        legend.title=element_blank(), 
+        legend.key.height=unit(0.3, "cm"),
+        legend.key.width=unit(0.3, "cm"),
+        legend.spacing.x=unit(0.1, "cm"),
+        legend.background=element_rect(fill="white", linetype=1,
+          size=0.3, color="black")
+	    ) + 
+
+      # Axes
+      scale_x_continuous(
+        name="Tail length",
+        breaks = seq(1, xmax-xmin+1, 1),
+        labels = seq(xmin, xmax, 1),
+        expand=c(0,0),
+        limits=c(0.5, xmax-xmin+1.5)
+	    ) +
+      scale_y_continuous(
+        name="% Nucleotide",
+        breaks=seq(ymin, ymax, 0.1),
+        labels=seq(ymin*100, ymax*100, 10),
+        expand=c(0,0),
+        limits=c(0, ymax), 
+        position = "right"
+	    )
+  }
+
+  return(plot_grid(plotlist = plot_list, ncol=1)) # Use cowplot to place them in a grid
 }
 
 tail_pt_nuc_grapher <- function(){
