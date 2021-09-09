@@ -390,9 +390,110 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 
   return(plot_grid(plotlist = plot_list, ncol=1)) # Use cowplot to place them in a grid
 }
+tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
+  df <- filter(df, Gene_Name==gene) # Take one gene
+  out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
 
-tail_pt_nuc_grapher <- function(){
-  pass
+  for (sample in unique(df$Sample)){
+    #save total number of reads for that gene in that sample
+    total <- sum(filter(df, Sample==sample)$Count)
+
+    for (nuc in c("A", "C", "G", "T")) {
+      # Find frequency of each nucleotide at each position
+      frequency <- sum(filter(df, Sample==sample, substr(Tail_Sequence, 1, 1) == nuc)$Count)/total
+      # Add to out df
+      out <- rbind(out, c(sample, filter(df, Sample==sample)$Grouping[1], nuc, frequency))
+      }
+    
+  }
+  # Change to numeric types
+  out=out[-1,]
+  out$Frequency <- as.numeric(out$Frequency)
+
+  out_summed <-out %>%
+    group_by(Condition, Nuc) %>% 
+    summarise(freq_avg = mean(Frequency), sd= sd(Frequency), n=n(), se=sd/sqrt(n)) %>%
+    ungroup()
+
+  if(gimme){ # debugging
+    return(out)
+  }
+
+  # t-testing
+  pvals = c()
+  conditions = unique(out$Condition)
+  if (pdisplay){
+    if (length(conditions) != 2){
+      return("Can't do the stats on a different number than 2 conditions because statistics is hard") # Better error handling here
+    }
+    for (nuc in unique(out$Nuc)){
+      temp_val <- t.test(filter(out, Nuc==nuc, Condition==conditions[1])$Frequency, filter(out, Nuc==nuc, Condition==conditions[2])$Frequency)$p.val
+      pvals <- append(pvals, temp_val)
+    }
+  }
+
+  ################ Plotting ##########################
+  plt <- ggplot(out) + 
+    coord_cartesian() +
+    theme_classic() +
+
+    # Individual dots
+    geom_jitter(aes(y=Frequency, color=Condition, x=Nuc)) +
+
+    # Lines for mean
+    geom_linerange(data=out_summed, aes(y=freq_avg, 
+      xmax=c(1.4, 2.4, 3.4, 4.4, 1.4, 2.4, 3.4, 4.4), 
+      xmin=c(0.6, 1.6, 2.6, 3.6, 0.6, 1.6, 2.6, 3.6), 
+      color=Condition)) +
+
+
+    geom_errorbar(data=out_summed, 
+      aes(x=Nuc, ymin=freq_avg-se, ymax=freq_avg+se, color=Condition, width=0.2)) +
+
+    # Themeing
+    theme(strip.background.x = element_rect(
+      fill="grey",
+      linetype=1, size=0.3),
+      strip.background.y = element_rect(
+      fill="grey",
+      linetype=1, size=0.3), 
+      strip.text = element_text(size=16, family="Helvetica",
+        color="black"), 
+      strip.text.x = element_text(margin = 
+        margin(0.05, 0, 0.05, 0, "cm")),
+      strip.text.y = element_text(margin = 
+        margin(0, 0.08, 0, 0.08, "cm"))
+    ) +
+		
+	theme(axis.text=element_text(family="Helvetica", size = 12),
+		axis.text.x=element_text(angle = 45, 
+			vjust = 0.8, hjust = 0.8),
+		axis.line=element_line(size=0.3),
+		axis.ticks.length=unit(0.1, "cm"),
+		axis.ticks=element_line(size=0.3),
+		axis.title=element_text(family="Helvetica", face="bold",
+		size=16),
+		legend.text=element_text(family="Helvetica", size=8),
+		legend.title=element_blank(),
+		legend.key.height=unit(0.1, "cm"),
+		legend.key.width=unit(0.4, "cm")
+  ) +
+
+  #Axes
+  scale_y_continuous( 
+		limits=c(ymin-0.01, ymax), 
+		position = "right")
+
+
+  ######## options ############
+
+  if (pdisplay){
+    pvals <- lapply(pvals, round, digits=4)
+    pvals <- paste0("p=", pvals)
+    plt <- plt + geom_text(data=out_summed, aes(x=Nuc, y=ymax, label=append(pvals, c("", "", "", ""))))
+  }
+
+  return(plt)
 }
 
 discover_candidates <- function(){
