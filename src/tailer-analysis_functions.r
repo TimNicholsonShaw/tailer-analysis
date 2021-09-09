@@ -2,6 +2,8 @@ library(tidyverse)
 library(ggseqlogo)
 library(cowplot)
 library(progress)
+library(shiny)
+library(shinycssloaders)
 
 
 
@@ -487,18 +489,14 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
   if (pdisplay){
     pvals <- lapply(pvals, round, digits=4)
     pvals <- paste0("p=", pvals)
-    plt <- plt + geom_text(data=out_summed, aes(x=Nuc, y=ymax, label=append(pvals, c("", "", "", ""))))
+    plt <- plt + geom_text(data=out_summed, aes(x=Nuc, y=ymax, label=append(pvals, c("", "", "", "")))) # this is dumb, but it works
   }
-
-
 
 
   return(plt)
 }
 
 discover_candidates <- function(df, min=1){
-
-  
 
   conditions <- unique(df$Grouping)
   if (length(conditions) != 2){ # Statistics is hard
@@ -511,39 +509,43 @@ discover_candidates <- function(df, min=1){
           clear=FALSE)
 
   out <- data.frame(Gene=NA, pval_three_end=NA, pval_tail_length=NA)
-
-  for (i in 1:length(genes)) {
-    pb$tick()
-    # toss if it doesn't meet the minimum number of reads
-    if (genes[i] == "None") next
-    if (nrow(filter(df, Grouping==conditions[1],Gene_Name==genes[i])) < min) next
-    if (nrow(filter(df, Grouping==conditions[2],Gene_Name==genes[i])) < min) next
-
-
-    statistic_three_end <- tryCatch({
-      suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Three_End,
-                         filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Three_End))
-                         },
-      error = function(e) e
-    )
-    
-    #Erros to NA
-    if(inherits(statistic_three_end, "error")) statistic_three_end$p.value <- NA
+  
+ 
+  withProgress( message="Finding Candidates", value=0, { # Progress bar wrapper for shiny
+    for (i in 1:length(genes)) {
+      pb$tick()
+      incProgress(1/length(genes))
+      # toss if it doesn't meet the minimum number of reads
+      if (genes[i] == "None") next
+      if (nrow(filter(df, Grouping==conditions[1],Gene_Name==genes[i])) < min) next
+      if (nrow(filter(df, Grouping==conditions[2],Gene_Name==genes[i])) < min) next
 
 
-    statistic_tail_length <- tryCatch({
-      suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Length,
-                         filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Length))
-                         },
-      error = function(e) e
-    )
-    
-    # Errors to NA
-    if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
-    
+      statistic_three_end <- tryCatch({
+        suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Three_End,
+                          filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Three_End))
+                          },
+        error = function(e) e
+      )
+      
+      #Erros to NA
+      if(inherits(statistic_three_end, "error")) statistic_three_end$p.value <- NA
 
-    out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value))
-  }
+
+      statistic_tail_length <- tryCatch({
+        suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Length,
+                          filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Length))
+                          },
+        error = function(e) e
+      )
+      
+      # Errors to NA
+      if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
+      
+
+      out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value))
+    }
+  }) 
 
   out<-out[-1,] # Remove crap line
   # Change to numeric types
