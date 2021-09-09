@@ -1,6 +1,7 @@
 library(tidyverse)
 library(ggseqlogo)
 library(cowplot)
+library(progress)
 
 
 
@@ -148,7 +149,7 @@ cumulativeTailPlotter <- function(df, gene, start, stop, gimme=FALSE, show_legen
   return(plt)
 
      
-  }
+}
 
 tail_bar_grapher <- function(df, gene, start, stop, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE) {
   df <- filter(df, Gene_Name==gene) # Take one gene
@@ -280,14 +281,8 @@ tail_bar_grapher <- function(df, gene, start, stop, gimme=F, ymin=0, ymax=1, AUC
     #plt <- plt + geom_point(data=out[-1,], aes(x=Pos, y=reads_at_end))
   }
 
-  return(plt) }
-
-
-
-
-
-
-
+  return(plt) 
+}
 
 tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F) {
 
@@ -385,11 +380,13 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
         expand=c(0,0),
         limits=c(0, ymax), 
         position = "right"
-	    )
+	    ) +
+      ggtitle(conditions[i])
   }
 
   return(plot_grid(plotlist = plot_list, ncol=1)) # Use cowplot to place them in a grid
 }
+
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
   df <- filter(df, Gene_Name==gene) # Take one gene
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
@@ -495,9 +492,64 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
 
   return(plt)
 }
+discover_candidates <- function(df, min=1){
 
-discover_candidates <- function(){
-  pass
+  
+
+  conditions <- unique(df$Grouping)
+  if (length(conditions) != 2){ # Statistics is hard
+    return("Candidate discovery doesn't support this number of conditions :(, try with just 2")
+  }
+  genes <- unique(df$Gene_Name)
+
+  pb <- progress_bar$new(total=length(genes),
+          format = "Finding candidates [:bar] :percent | :elapsed | Estimated eta: :eta",
+          clear=FALSE)
+
+  out <- data.frame(Gene=NA, pval_three_end=NA, pval_tail_length=NA)
+
+  for (i in 1:length(genes)) {
+    pb$tick()
+    # toss if it doesn't meet the minimum number of reads
+    if (genes[i] == "None") next
+    if (nrow(filter(df, Grouping==conditions[1],Gene_Name==genes[i])) < min) next
+    if (nrow(filter(df, Grouping==conditions[2],Gene_Name==genes[i])) < min) next
+
+
+    statistic_three_end <- tryCatch({
+      suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Three_End,
+                         filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Three_End))
+                         },
+      error = function(e) e
+    )
+    
+    #Erros to NA
+    if(inherits(statistic_three_end, "error")) statistic_three_end$p.value <- NA
+
+
+    statistic_tail_length <- tryCatch({
+      suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Length,
+                         filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Length))
+                         },
+      error = function(e) e
+    )
+    
+    # Errors to NA
+    if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
+    
+
+    out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value))
+  }
+
+  out<-out[-1,] # Remove crap line
+  # Change to numeric types
+  out$pval_three_end <- as.numeric(out$pval_three_end)
+  out$pval_tail_length <- as.numeric(out$pval_tail_length)
+
+  out <- out[order(out$pval_three_end),]
+  return (out)
+  
+
 }
 
  
