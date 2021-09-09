@@ -490,8 +490,12 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
     plt <- plt + geom_text(data=out_summed, aes(x=Nuc, y=ymax, label=append(pvals, c("", "", "", ""))))
   }
 
+
+
+
   return(plt)
 }
+
 discover_candidates <- function(df, min=1){
 
   
