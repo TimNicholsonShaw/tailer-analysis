@@ -441,8 +441,8 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
 
     # Lines for mean
     geom_linerange(data=out_summed, aes(y=freq_avg, 
-      xmax=c(1.4, 2.4, 3.4, 4.4, 1.4, 2.4, 3.4, 4.4), 
-      xmin=c(0.6, 1.6, 2.6, 3.6, 0.6, 1.6, 2.6, 3.6), 
+      xmax=rep(c(1.4, 2.4, 3.4, 4.4), length(conditions)), 
+      xmin=rep(c(0.6, 1.6, 2.6, 3.6), length(conditions)), 
       color=Condition)) +
 
 

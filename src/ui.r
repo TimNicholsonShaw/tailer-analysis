@@ -90,6 +90,81 @@ ui_tail_bar_graph <- fluidPage(
     )
 )
 
+ui_tail_logo_plot <- fluidPage(
+    sidebarLayout(
+        sidebarPanel("Options",
+          textInput("tail_logo_gene_name",
+            label="Gene Name"
+          ),
+          numericInput("tail_logo_xmin",
+            label="Tail Position Start",
+            min=1,
+            value=1
+          ),
+          numericInput("tail_logo_xmax",
+            label="Tail Position End",
+            min=1,
+            value=10
+          ),
+          numericInput("tail_logo_ymin",
+            label="Fraction Minimum",
+            min=0,
+            max=1,
+            step=0.1,
+            value=0
+          ),
+          numericInput("tail_logo_ymax",
+            label="Fraction Maximum",
+            min=0,
+            max=1,
+            step=0.1,
+            value=1
+          ),
+          actionButton("make_tail_logo",
+            label="Make Plot"
+          )
+
+        ),
+        mainPanel(
+            plotOutput("tail_logo") %>% withSpinner(color="#0dc5c1")
+        )
+    )
+)
+
+ui_pt_graph <- fluidPage(
+    sidebarLayout(
+        sidebarPanel("Options",
+            textInput("pt_gene_name",
+                label="Gene Name"
+            ),
+            numericInput("pt_ymin",
+                label="Fraction Minimum",
+                min=0,
+                max=1,
+                value=0,
+                step=0.1
+            ),
+            numericInput("pt_ymax",
+                label="Fraction Maximum",
+                min=0,
+                max=1,
+                value=1,
+                step=0.1
+            ),
+            checkboxInput("pt_pdisplay",
+                label="Display P Values",
+                value=F
+            ),
+            actionButton("make_pt_graph",
+                label="Make Plot"
+            )
+        ),
+        mainPanel(
+            plotOutput("pt_graph") %>% withSpinner(color="#0dc5c1")
+        )
+    )
+)
+
 # Actual UI declaration
 ui <- fluidPage(
     titlePanel(
@@ -100,7 +175,7 @@ ui <- fluidPage(
         tabPanel("Candidate Finder", ui_candidate_finder),
         tabPanel("Cumulative Plot", ui_cumulative_tail_plot),
         tabPanel("Tail Bar Graph", ui_tail_bar_graph),
-        tabPanel("Graph3"),
-        tabPanel("Graph4")
+        tabPanel("Tail Logo Plot", ui_tail_logo_plot),
+        tabPanel("Post-Transcriptional Tailing", ui_pt_graph)
     )
 )

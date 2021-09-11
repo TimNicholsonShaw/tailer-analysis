@@ -83,6 +83,32 @@ server <- function(input, output, session){
 
 ################### Tail Logo Graph #####################
 
-  observeEvent(input$make_tail_logo)
+  observeEvent(input$make_tail_logo, {
+    output$tail_logo <- renderPlot({
+      tail_logo_grapher(
+        df(),
+        isolate(input$tail_logo_gene_name),
+        xmin=isolate(input$tail_logo_xmin),
+        xmax=isolate(input$tail_logo_xmax),
+        ymin=isolate(input$tail_logo_ymin),
+        ymax=isolate(input$tail_logo_ymax)
+      )
+
+    })
+  })
+
+####################### PT Nuc Graph ########################
+
+  observeEvent(input$make_pt_graph, {
+    output$pt_graph <- renderPlot({
+      tail_pt_nuc_grapher(
+        df(),
+        isolate(input$pt_gene_name),
+        ymin=isolate(input$pt_ymin),
+        ymax=isolate(input$pt_ymax),
+        pdisplay=isolate(input$pt_pdisplay)
+      )
+    })
+  })
 
 }
