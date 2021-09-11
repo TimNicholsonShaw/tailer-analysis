@@ -1,4 +1,3 @@
-
 #Pieces
 ui_files <- fluidPage(
   #Input files and give them experimental groupings
