@@ -32,7 +32,7 @@ dfBuilder <- function(files, grouping){
   return (out[-1,])
 }
 
-cumulativeTailPlotter <- function(df, gene, start, stop, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, linecolors=""){
+cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, linecolors=""){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
   df <- filter(df, Gene_Name==gene) 
@@ -153,7 +153,7 @@ cumulativeTailPlotter <- function(df, gene, start, stop, gimme=FALSE, show_legen
      
 }
 
-tail_bar_grapher <- function(df, gene, start, stop, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE) {
+tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE) {
   df <- filter(df, Gene_Name==gene) # Take one gene
 
   #Pre-populate dataframe
