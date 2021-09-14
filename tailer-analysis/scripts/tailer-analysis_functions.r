@@ -4,7 +4,46 @@ library(cowplot)
 library(progress)
 library(shiny)
 library(shinycssloaders)
+library(ggthemes)
 
+common_theme <- function() {
+  theme_base() +
+    theme(plot.title = element_text(face = "bold",
+                                         size = rel(1.2), hjust = 0.5),
+     panel.background = element_rect(colour = NA),
+     plot.background = element_rect(colour = NA),
+     panel.border = element_rect(colour = NA),
+     axis.title = element_text(face = "bold",size = rel(1)),
+     axis.title.y = element_text(angle=90,vjust =2),
+     axis.title.x = element_text(vjust = -0.2),
+     axis.text = element_text(size=rel(1.1)), 
+     axis.line = element_line(colour="black"),
+     axis.ticks = element_line(),
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     legend.key = element_rect(colour = NA),
+     legend.position = "right",
+     legend.key.size= unit(0.6, "cm"),
+     legend.margin = unit(0, "cm"),
+     legend.title = element_text(face="italic", size=rel(1)),
+     plot.margin=unit(c(10,5,5,5),"mm"),
+     strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
+     strip.text = element_text(face="bold")
+    )
+
+
+}
+jens_colors <- function(...){
+        library(scales)
+        discrete_scale("color","Jens",
+        manual_pal(values = c("#0073c2", "#efc000", "#868686", "#cd534c", "#7aa6dc", "#003c67", "8f7700", "#3b3b3b", "#a73030", "#4a6990")), ...)
+}
+
+jens_fill_colors <- function(...){
+        library(scales)
+        discrete_scale("color","Jens",
+        manual_pal(values = c("#0073c2", "#efc000", "#868686", "#cd534c", "#7aa6dc", "#003c67", "8f7700", "#3b3b3b", "#a73030", "#4a6990")), ...)
+}
 
 
 dfBuilder <- function(files, grouping){
@@ -94,50 +133,17 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
 
   # Axes
   scale_x_continuous(name="3' end position", 
-		breaks=seq(start, stop, 2),
-		expand=c(0,0),
+    expand=c(0,0),
 		limits=c(start,stop)) +
-  scale_y_continuous(name="Cumulative Percent", 
-		breaks=seq(0.1, 1, 0.2), 
+  scale_y_continuous(name="Cumulative Fraction",  
 		expand=c(0,0), 
 		limits=c(ymin, ymax),
 		position = "right"
 		) +  
 
   # Theming
-  theme_classic() +
-  theme(axis.text=element_text(family="Helvetica", size=12),
-		axis.line=element_line(size=0.5),
-		axis.ticks.length=unit(0.1, "cm"),
-		axis.ticks=element_line(size=0.5),
-		axis.title=element_text(family="Helvetica", face="bold",
-		size=16),
-		legend.text=element_text(family="Helvetica", size=8),
-		legend.title=element_blank(),
-		legend.key.height=unit(0.1, "cm"),
-		legend.key.width=unit(0.4, "cm")) +
+    common_theme()
 
-    theme(strip.background = element_rect(fill="grey", linetype=1,
-		size=0.8), 
-		strip.text = element_text(size=16, family="Helvetica",
-		color="black"), 
-		strip.text.x = element_text(margin = margin(0.05, 0,
-			0.05, 0, "cm")),
-		strip.text.y = element_text(margin = 
-			margin(0, 0.08, 0, 0.08, "cm"))
-		) +
-
-  # Pretty segments
-  	geom_segment(aes(x=stop,xend=stop,
-      y=ymin, 
-      yend=ymax), 
-      size=0.5) +
-
-  
-  #Colors
-  #scale_fill_manual(values=linecolors) +
-
-  
   ######## Plot Options #########
 
   if (show_legend == FALSE){
@@ -149,8 +155,6 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   }
 
   return(plt)
-
-     
 }
 
 tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE) {
@@ -219,34 +223,13 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     facet_grid(rows=vars(Condition), switch="y") +
 
     # themeing
-    theme(axis.text=element_text(family="Helvetica", size=12),
-          axis.line=element_line(size=0.5),
-          axis.ticks.length=unit(0.1, "cm"),
-          axis.ticks=element_line(size=0.5),
-          axis.title=element_text(family="Helvetica", face="bold",
-                                  size=16),
-          legend.text=element_text(family="Helvetica", size=8),
-          legend.title=element_blank(),
-          legend.key.height=unit(0.1, "cm"),
-          legend.key.width=unit(0.4, "cm")) +
-
-    theme(strip.background = element_rect(fill="grey", linetype=1,
-                                          size=0.3), 
-          strip.text = element_text(size=16, family="Helvetica",
-                                    color="black"), 
-          strip.text.x = element_text(margin = margin(0.05, 0,
-                                                      0.05, 0, "cm")),
-          strip.text.y = element_text(margin = 
-                                        margin(0, 0.08, 0, 0.08, "cm"))
-    ) +
+    common_theme() +
   
   # Axes
   scale_x_continuous(name="Position", 
-		breaks=seq(start, stop, 2),
 		expand=c(0,0),
 		limits=c(start,stop)) +
   scale_y_continuous(name="Fraction", 
-		breaks=seq(0.1, 1, 0.2), 
 		expand=c(0,0), 
 		limits=c(ymin, ymax),
 		position = "right"
@@ -269,10 +252,6 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
                      y=ymax, 
                      yend=ymax), 
                  size=0.3) +
-
-  # Custom colors
-  # scale_fill_manual(values=AUCGcolors)
-
 
   # options
   if (show_legend == FALSE){
@@ -349,23 +328,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
       coord_cartesian() +
 
       # Themeing
-      theme_classic() +
-      theme(
-        axis.text=element_text(family="Helvetica", size=12),
-        axis.text.x=element_text(hjust=0.5),
-        axis.line=element_line(size=0.3),
-        axis.ticks.length=unit(0.1, "cm"),
-        axis.ticks=element_line(size=0.3),
-        axis.title=element_text(family="Helvetica", 
-          face="bold", size=16),
-        legend.text=element_text(family="Helvetica", size=8),
-        legend.title=element_blank(), 
-        legend.key.height=unit(0.3, "cm"),
-        legend.key.width=unit(0.3, "cm"),
-        legend.spacing.x=unit(0.1, "cm"),
-        legend.background=element_rect(fill="white", linetype=1,
-          size=0.3, color="black")
-	    ) + 
+      common_theme() +
 
       # Axes
       scale_x_continuous(
@@ -450,38 +413,13 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
       aes(x=Nuc, ymin=freq_avg-se, ymax=freq_avg+se, color=Condition, width=0.2)) +
 
     # Themeing
-    theme(strip.background.x = element_rect(
-      fill="grey",
-      linetype=1, size=0.3),
-      strip.background.y = element_rect(
-      fill="grey",
-      linetype=1, size=0.3), 
-      strip.text = element_text(size=16, family="Helvetica",
-        color="black"), 
-      strip.text.x = element_text(margin = 
-        margin(0.05, 0, 0.05, 0, "cm")),
-      strip.text.y = element_text(margin = 
-        margin(0, 0.08, 0, 0.08, "cm"))
-    ) +
+    common_theme() + 
 		
-	theme(axis.text=element_text(family="Helvetica", size = 12),
-		axis.text.x=element_text(angle = 45, 
-			vjust = 0.8, hjust = 0.8),
-		axis.line=element_line(size=0.3),
-		axis.ticks.length=unit(0.1, "cm"),
-		axis.ticks=element_line(size=0.3),
-		axis.title=element_text(family="Helvetica", face="bold",
-		size=16),
-		legend.text=element_text(family="Helvetica", size=8),
-		legend.title=element_blank(),
-		legend.key.height=unit(0.1, "cm"),
-		legend.key.width=unit(0.4, "cm")
-  ) +
 
-  #Axes
-  scale_y_continuous( 
-		limits=c(ymin-0.01, ymax), 
-		position = "right")
+    #Axes
+    scale_y_continuous( 
+      limits=c(ymin-0.01, ymax), 
+      position = "right")
 
 
   ######## options ############
