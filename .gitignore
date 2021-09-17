@@ -41,3 +41,5 @@ vignettes/*.pdf
 *.html
 tests/
 .DS_Store
+*.sam
+tailer-analysis/rsconnect/

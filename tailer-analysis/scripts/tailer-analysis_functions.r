@@ -28,23 +28,9 @@ common_theme <- function() {
      legend.title = element_text(face="italic", size=rel(1)),
      plot.margin=unit(c(10,5,5,5),"mm"),
      strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
-     strip.text = element_text(face="bold")
+     strip.text = element_text(face="bold") 
     )
-
-
 }
-jens_colors <- function(...){
-        library(scales)
-        discrete_scale("color","Jens",
-        manual_pal(values = c("#0073c2", "#efc000", "#868686", "#cd534c", "#7aa6dc", "#003c67", "8f7700", "#3b3b3b", "#a73030", "#4a6990")), ...)
-}
-
-jens_fill_colors <- function(...){
-        library(scales)
-        discrete_scale("color","Jens",
-        manual_pal(values = c("#0073c2", "#efc000", "#868686", "#cd534c", "#7aa6dc", "#003c67", "8f7700", "#3b3b3b", "#a73030", "#4a6990")), ...)
-}
-
 
 dfBuilder <- function(files, grouping){
   # There's gotta be a better way to do this, please tell me at timnicholsonshaw@gmail.com
@@ -58,11 +44,11 @@ dfBuilder <- function(files, grouping){
                     Tail_Sequence="",
                     Sample="",
                     Grouping="")
-  
   for (i in c(1:length(files))){
     temp_df <- read_csv(files[i]) 
     temp_df$Sample <- files[i] # Add file name as sample name, maybe do prefix?
     temp_df$Grouping <- grouping[i] # Add sample metadata
+    print(temp_df)
     out <- rbind(out, temp_df)
   }
   out$Count <- as.numeric(out$Count)
