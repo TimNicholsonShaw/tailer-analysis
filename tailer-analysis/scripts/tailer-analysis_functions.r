@@ -5,34 +5,6 @@ library(progress)
 library(shiny)
 library(shinycssloaders)
 library(ggthemes)
-source("prettification.r", chdir=T)
-
-
-common_theme <- function() { 
-  theme_base() +
-    theme(plot.title = element_text(face = "bold",
-                                         size = rel(1.2), hjust = 0.5),
-     panel.background = element_rect(colour = NA),
-     plot.background = element_rect(colour = NA),
-     panel.border = element_rect(colour = NA),
-     axis.title = element_text(face = "bold",size = rel(1)),
-     axis.title.y = element_text(angle=90,vjust =2),
-     axis.title.x = element_text(vjust = -0.2),
-     axis.text = element_text(size=rel(1.1)), 
-     axis.line = element_line(colour="black"),
-     axis.ticks = element_line(),
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     legend.key = element_rect(colour = NA),
-     legend.position = "right",
-     legend.key.size= unit(0.6, "cm"),
-     legend.margin = unit(0, "cm"),
-     legend.title = element_text(face="italic", size=rel(1)),
-     plot.margin=unit(c(10,5,5,5),"mm"),
-     strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
-     strip.text = element_text(face="bold") 
-    )
-}
 
 
 dfBuilder <- function(files, grouping){
@@ -51,7 +23,7 @@ dfBuilder <- function(files, grouping){
     temp_df <- read_csv(files[i]) 
     temp_df$Sample <- files[i] # Add file name as sample name, maybe do prefix?
     temp_df$Grouping <- grouping[i] # Add sample metadata
-    print(temp_df)
+
     out <- rbind(out, temp_df)
   }
   out$Count <- as.numeric(out$Count)
@@ -60,11 +32,11 @@ dfBuilder <- function(files, grouping){
   return (out[-1,])
 }
 
-cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, linecolors=""){
+cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
-  #df <- filter(df, Gene_Name==gene) 
-  df <- multimap_gene_subsetter(df, gene)
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene)
+  else df <- filter(df, Gene_Name==gene) 
 
   # Pre-populate dataframe
   out = data.frame(Pos="", Total_Percentage="", Three_End_Percentage="",  Sample="", Condition="")
@@ -132,7 +104,8 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
 		) +  
 
   # Theming
-    common_theme()
+    common_theme() +
+    scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill"))
 
   ######## Plot Options #########
 
@@ -147,9 +120,9 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   return(plt)
 }
 
-tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE) {
-  #df <- filter(df, Gene_Name==gene) # Take one gene
-  df <- multimap_gene_subsetter(df, gene)
+tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE, multi_locus=F) {
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene)
+  else df <- filter(df, Gene_Name==gene) 
 
   #Pre-populate dataframe
   out <- data.frame(Pos="", reads_at_end="", reads_start_A="", reads_start_C="", reads_start_G="", reads_start_T="", Sample="", Condition="")
@@ -215,6 +188,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 
     # themeing
     common_theme() +
+    scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill")) +
   
   # Axes
   scale_x_continuous(name="Position", 
@@ -242,7 +216,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     geom_segment(aes(x=start,xend=stop,
                      y=ymax, 
                      yend=ymax), 
-                 size=0.3) +
+                 size=0.3)
 
   # options
   if (show_legend == FALSE){
@@ -256,7 +230,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   return(plt) 
 }
 
-tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F) {
+tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F) {
 
   # So percentages can be entered as parameters as well as fractions
   if (ymax>1){
@@ -267,8 +241,8 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   }
 
   ############ data pre-processing #################
-  #df <- filter(df, Gene_Name==gene) # Take one gene
-  df <- multimap_gene_subsetter(df, gene)
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene)
+  else df <- filter(df, Gene_Name==gene) 
 
   out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
 
@@ -320,7 +294,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
       coord_cartesian() +
 
       # Themeing
-      common_theme() +
+      common_theme() +     
 
       # Axes
       scale_x_continuous(
@@ -344,9 +318,10 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   return(plot_grid(plotlist = plot_list, ncol=1)) # Use cowplot to place them in a grid
 }
 
-tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
-  #df <- filter(df, Gene_Name==gene) # Take one gene
-  df <- multimap_gene_subsetter(df, gene)
+tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F){
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene)
+  else df <- filter(df, Gene_Name==gene) 
+  
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
 
   for (sample in unique(df$Sample)){
@@ -406,7 +381,8 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
       aes(x=Nuc, ymin=freq_avg-se, ymax=freq_avg+se, color=Condition, width=0.2)) +
 
     # Themeing
-    common_theme() + 
+    common_theme() +
+    scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill")) + 
 		
 
     #Axes
@@ -512,3 +488,44 @@ discover_candidates <- function(df, min=1){
           )>0)),]
   }
 }
+
+################### Pretty Making Functions ################
+common_theme <- function() { 
+  theme_base() +
+    theme(plot.title = element_text(face = "bold",
+                                         size = rel(1.2), hjust = 0.5),
+     panel.background = element_rect(colour = NA),
+     plot.background = element_rect(colour = NA),
+     panel.border = element_rect(colour = NA),
+     axis.title = element_text(face = "bold",size = rel(1)),
+     axis.title.y = element_text(angle=90,vjust =2),
+     axis.title.x = element_text(vjust = -0.2),
+     axis.text = element_text(size=rel(1.1)), 
+     axis.line = element_line(colour="black"),
+     axis.ticks = element_line(),
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     legend.key = element_rect(colour = NA),
+     legend.position = "right",
+     legend.key.size= unit(0.6, "cm"),
+     legend.margin = unit(0, "cm"),
+     legend.title = element_text(face="italic", size=rel(1)),
+     plot.margin=unit(c(10,5,5,5),"mm"),
+     strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
+     strip.text = element_text(face="bold") 
+    )
+}
+
+jens_colors <- c(
+  "#0073c2", 
+  "#efc000", 
+  "#868686",
+  "#cd534c", 
+  "#7aa6dc", 
+  "#003c67", 
+  "#8f7700", 
+  "#3b3b3b",
+	"#a73030", 
+  "#4a6990"
+)
+
