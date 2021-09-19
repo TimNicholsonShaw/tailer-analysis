@@ -21,6 +21,9 @@ ui_candidate_finder <- fluidPage(
 ui_cumulative_tail_plot <- fluidPage(
     sidebarLayout(
         sidebarPanel( "Options",
+            checkboxInput("cum_plot_multiloc",
+                label="Multi Locus Gene",
+                value=F),
             textInput("cum_plot_gene_name",
                 label="Gene Name"),
             numericInput("cum_plot_x_min", 
@@ -60,6 +63,9 @@ ui_tail_bar_graph <- fluidPage(
         sidebarPanel( "Options",
             textInput("tail_bar_gene_name",
                 label="Gene Name"),
+            checkboxInput("tail_bar_multiloc",
+                label="Multi Locus Gene",
+                value=F),
             numericInput("tail_bar_x_min", 
                 label="Minimum Position",
                 value=-10
@@ -95,6 +101,9 @@ ui_tail_logo_plot <- fluidPage(
           textInput("tail_logo_gene_name",
             label="Gene Name"
           ),
+        checkboxInput("tail_logo_multiloc",
+                label="Multi Locus Gene",
+                value=F),
           numericInput("tail_logo_xmin",
             label="Tail Position Start",
             min=1,
@@ -136,6 +145,9 @@ ui_pt_graph <- fluidPage(
             textInput("pt_gene_name",
                 label="Gene Name"
             ),
+            checkboxInput("pt_multiloc",
+                label="Multi Locus Gene",
+                value=F),
             numericInput("pt_ymin",
                 label="Fraction Minimum",
                 min=0,

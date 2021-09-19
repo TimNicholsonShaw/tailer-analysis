@@ -63,7 +63,8 @@ server <- function(input, output, session){
         stop=isolate(input$cum_plot_x_max),
         ymin=isolate(input$cum_plot_y_min),
         ymax=isolate(input$cum_plot_y_max),
-        dots=isolate(input$cum_plot_dots)
+        dots=isolate(input$cum_plot_dots),
+        multi_locus=isolate(input$cum_plot_multiloc)
       )
     })
   })
@@ -78,6 +79,7 @@ server <- function(input, output, session){
         stop=isolate(input$tail_bar_x_max),
         ymin=isolate(input$tail_bar_y_min),
         ymax=isolate(input$tail_bar_y_max),
+        multi_locus=isolate(input$tail_bar_multiloc)
       )
     })
   })
@@ -92,7 +94,8 @@ server <- function(input, output, session){
         xmin=isolate(input$tail_logo_xmin),
         xmax=isolate(input$tail_logo_xmax),
         ymin=isolate(input$tail_logo_ymin),
-        ymax=isolate(input$tail_logo_ymax)
+        ymax=isolate(input$tail_logo_ymax),
+        multi_locus=isolate(input$tail_logo_multiloc)
       )
 
     })
@@ -107,7 +110,8 @@ server <- function(input, output, session){
         isolate(input$pt_gene_name),
         ymin=isolate(input$pt_ymin),
         ymax=isolate(input$pt_ymax),
-        pdisplay=isolate(input$pt_pdisplay)
+        pdisplay=isolate(input$pt_pdisplay),
+        multi_locus=isolate(input$pt_multiloc)
       )
     })
   })
