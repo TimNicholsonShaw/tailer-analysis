@@ -5,8 +5,10 @@ library(progress)
 library(shiny)
 library(shinycssloaders)
 library(ggthemes)
+source("prettification.r", chdir=T)
 
-common_theme <- function() {
+
+common_theme <- function() { 
   theme_base() +
     theme(plot.title = element_text(face = "bold",
                                          size = rel(1.2), hjust = 0.5),
@@ -31,6 +33,7 @@ common_theme <- function() {
      strip.text = element_text(face="bold") 
     )
 }
+
 
 dfBuilder <- function(files, grouping){
   # There's gotta be a better way to do this, please tell me at timnicholsonshaw@gmail.com
@@ -60,7 +63,8 @@ dfBuilder <- function(files, grouping){
 cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, linecolors=""){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
-  df <- filter(df, Gene_Name==gene) 
+  #df <- filter(df, Gene_Name==gene) 
+  df <- multimap_gene_subsetter(df, gene)
 
   # Pre-populate dataframe
   out = data.frame(Pos="", Total_Percentage="", Three_End_Percentage="",  Sample="", Condition="")
@@ -144,7 +148,8 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
 }
 
 tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE) {
-  df <- filter(df, Gene_Name==gene) # Take one gene
+  #df <- filter(df, Gene_Name==gene) # Take one gene
+  df <- multimap_gene_subsetter(df, gene)
 
   #Pre-populate dataframe
   out <- data.frame(Pos="", reads_at_end="", reads_start_A="", reads_start_C="", reads_start_G="", reads_start_T="", Sample="", Condition="")
@@ -262,7 +267,8 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   }
 
   ############ data pre-processing #################
-  df <- filter(df, Gene_Name==gene) # Take one gene
+  #df <- filter(df, Gene_Name==gene) # Take one gene
+  df <- multimap_gene_subsetter(df, gene)
 
   out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
 
@@ -339,7 +345,8 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 }
 
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F){
-  df <- filter(df, Gene_Name==gene) # Take one gene
+  #df <- filter(df, Gene_Name==gene) # Take one gene
+  df <- multimap_gene_subsetter(df, gene)
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
 
   for (sample in unique(df$Sample)){
@@ -482,4 +489,26 @@ discover_candidates <- function(df, min=1){
 
 }
 
- 
+ multimap_gene_subsetter <- function(df, query){
+  if (startsWith(query,"ENSG")){ # handler for ensids
+      query <- str_split(query, "\\|")[[1]] #splits query by | character
+      #if (length(query)==1) return(filter(df, EnsID==query))
+      
+      df[unlist(lapply(df$EnsID, function(x) length(
+          intersect(
+            str_split(x, "\\|")[[1]], 
+            query)
+          )>0)),]
+    
+  }
+  else{
+      query <- str_split(query, "\\|")[[1]]
+      #if (length(query)==1) return(filter(df, Gene_Name==query))
+    
+      df[unlist(lapply(df$Gene_Name, function(x) length(
+          intersect(
+            str_split(x, "\\|")[[1]], 
+            query)
+          )>0)),]
+  }
+}
