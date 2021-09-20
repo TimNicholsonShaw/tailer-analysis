@@ -171,14 +171,18 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 
   plt$Nuc <- factor(plt$Nuc, levels=c("A", "C", "G", "T", "Genomic_Encoded"))
   plt$Nuc <- recode_factor(plt$Nuc, T="U")
+  plt <- plt %>%
+    group_by(Condition, Pos, Nuc) %>% 
+    summarise(freq_avg = mean(Frequency)) %>%
+    ungroup()
 
   ######################### Plotting ############################
   plt <- plt %>%
 
     # main bar graph
-    ggplot(aes(x=Pos, y=Frequency, color=Nuc, fill=Nuc)) +
+    ggplot(aes(x=Pos, y=freq_avg, color=Nuc, fill=Nuc)) +
     geom_bar(stat='identity') +
-    #facet_grid(rows=vars(Condition), cols=vars(top_label), switch="y") +
+    facet_grid(rows=vars(Condition), cols=vars(toString(gene)), switch="y") +
 
     # themeing
     common_theme() +
