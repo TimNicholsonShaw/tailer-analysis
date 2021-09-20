@@ -21,11 +21,11 @@ ui_candidate_finder <- fluidPage(
 ui_cumulative_tail_plot <- fluidPage(
     sidebarLayout(
         sidebarPanel( "Options",
+            textInput("cum_plot_gene_name",
+                label="Gene Name"),
             checkboxInput("cum_plot_multiloc",
                 label="Multi Locus Gene",
                 value=F),
-            textInput("cum_plot_gene_name",
-                label="Gene Name"),
             numericInput("cum_plot_x_min", 
                 label="Minimum Position",
                 value=-10

@@ -10,8 +10,7 @@ library(ggthemes)
 dfBuilder <- function(files, grouping){
   # There's gotta be a better way to do this, please tell me at timnicholsonshaw@gmail.com
   # Prep dataframe
-  out <- data.frame(Sequence="",
-                    Count="",
+  out <- data.frame(Count="",
                     EnsID="",
                     Gene_Name="",
                     Three_End="",
@@ -59,6 +58,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   out$Pos <- as.numeric(out$Pos)
   out=out[-1,] # drop that weird first row
 
+
   if (gimme) { # for debugging
     return(out)
   }
@@ -69,7 +69,11 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     dplyr::summarise(
       total_avg = mean(Total_Percentage),
       three_end_avg = mean(Three_End_Percentage)
-    ) %>% 
+    ) 
+
+  plt$top_label="RNA 3'End"
+  plt$left_label=""
+  plt<-plt %>%
   ggplot(aes(x=Pos, y=total_avg, color=Condition)) + 
 
   # Add gray rectangle indicating mature length
@@ -105,7 +109,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
 
   # Theming
     common_theme() +
-    scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill"))
+    scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill")) + facet_grid(left_label~top_label, switch='y')
 
   ######## Plot Options #########
 
@@ -167,8 +171,10 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
                      reads_start_A=mean(reads_start_A),
                      reads_start_C=mean(reads_start_C),
                      reads_start_G=mean(reads_start_G),
-                     reads_start_T=mean(reads_start_T)) %>%
+                     reads_start_T=mean(reads_start_T))
 
+  plt$top_label<- ""
+  plt<- plt %>%
     pivot_longer(cols=c(reads_start_A, reads_start_C, reads_start_G, reads_start_T, reads_at_end))
 
     plt$name <- factor(plt$name, levels=c('reads_start_A', 'reads_start_C', 'reads_start_G', 'reads_start_T', 'reads_at_end'))
@@ -184,7 +190,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     # main bar graph
     ggplot(aes(x=Pos, y=value, color=name, fill=name)) +
     geom_bar(stat='identity') +
-    facet_grid(rows=vars(Condition), switch="y") +
+    facet_grid(rows=vars(Condition), cols=vars(top_label), switch="y") +
 
     # themeing
     common_theme() +
@@ -288,10 +294,17 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
                 as.matrix(nrow=4, ncol=ncol(nucs)-1) # ggseqlogo needs a probability matrix
     rownames(plot_df) <- nucs$Nuc # Names from Nuc intermediate makes sure we don't get them out of order
 
+    	dimension_df <- expand.grid(
+        Nucleotide = c("A", "U", "C", "G"),
+        Position = xmin:xmax,
+        Percent = 0,
+        Condition = conditions[i],
+        Gene_Name = gene		
+      )
     # Add plot to plotlist
-    plot_list[[i]] <- ggplot() + 
-      geom_logo(data=plot_df, method='custom', font='roboto_bold') + 
-      coord_cartesian() +
+    plot_list[[i]] <- ggplot(dimension_df) + 
+      geom_logo(data=plot_df, method='custom', font='roboto_bold') +
+      facet_grid(cols=vars(Condition), rows=vars(Gene_Name), switch='y') +
 
       # Themeing
       common_theme() +     
@@ -311,8 +324,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
         expand=c(0,0),
         limits=c(0, ymax), 
         position = "right"
-	    ) +
-      ggtitle(conditions[i])
+	    ) 
   }
 
   return(plot_grid(plotlist = plot_list, ncol=1)) # Use cowplot to place them in a grid
@@ -321,7 +333,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F){
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else df <- filter(df, Gene_Name==gene) 
-  
+
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
 
   for (sample in unique(df$Sample)){
@@ -511,8 +523,8 @@ common_theme <- function() {
      legend.margin = unit(0, "cm"),
      legend.title = element_text(face="italic", size=rel(1)),
      plot.margin=unit(c(10,5,5,5),"mm"),
-     strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
-     strip.text = element_text(face="bold") 
+     strip.background=element_rect(colour="#919191",fill="#919191"),
+     strip.text = element_text(face="bold"),
     )
 }
 
