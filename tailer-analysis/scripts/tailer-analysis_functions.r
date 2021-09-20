@@ -35,6 +35,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
 
   # Pre-populate dataframe
@@ -126,6 +127,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
 
 tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE, multi_locus=F) {
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
 
   #Pre-populate dataframe
@@ -248,6 +250,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 
   ############ data pre-processing #################
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
 
   out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
@@ -332,6 +335,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F){
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
 
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
