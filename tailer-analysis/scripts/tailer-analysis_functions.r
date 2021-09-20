@@ -297,17 +297,13 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
                 as.matrix(nrow=4, ncol=ncol(nucs)-1) # ggseqlogo needs a probability matrix
     rownames(plot_df) <- nucs$Nuc # Names from Nuc intermediate makes sure we don't get them out of order
 
-    	dimension_df <- expand.grid(
-        Nucleotide = c("A", "U", "C", "G"),
-        Position = xmin:xmax,
-        Percent = 0,
-        Condition = conditions[i],
-        Gene_Name = gene		
-      )
-    # Add plot to plotlist
-    plot_list[[i]] <- ggplot(dimension_df) + 
-      geom_logo(data=plot_df, method='custom', font='roboto_bold') +
-      facet_grid(cols=vars(Condition), rows=vars(Gene_Name), switch='y') +
+    plot_list[[conditions[i]]] <- plot_df
+  }
+
+    ggplot() + 
+      geom_logo(data=plot_list, method='custom', font='roboto_bold') +
+      facet_grid(rows=vars(seq_group), cols=vars(toString(gene)), switch='y') +
+
 
       # Themeing
       common_theme() +     
@@ -328,9 +324,6 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
         limits=c(0, ymax), 
         position = "right"
 	    ) 
-  }
-
-  return(plot_grid(plotlist = plot_list, ncol=1)) # Use cowplot to place them in a grid
 }
 
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F){
@@ -383,22 +376,35 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
     coord_cartesian() +
     theme_classic() +
 
+
     # Individual dots
-    geom_jitter(aes(y=Frequency, color=Condition, x=Nuc)) +
+    geom_jitter(aes(y=Frequency, color=Condition, x=1)) +
 
     # Lines for mean
     geom_linerange(data=out_summed, aes(y=freq_avg, 
-      xmax=rep(c(1.4, 2.4, 3.4, 4.4), length(conditions)), 
-      xmin=rep(c(0.6, 1.6, 2.6, 3.6), length(conditions)), 
-      color=Condition)) +
+      xmax=2, 
+      xmin=0,
+      color=Condition))+
+
+    facet_grid(cols=vars(Nuc), rows=vars(toString(gene)), switch='y', labeller=labeller(Nuc=as_labeller(c("A"="A-tail", 
+                                                                                              "C"="C-tail",
+                                                                                              "G"="G-tail",
+                                                                                              "T"="U-tail",
+                                                                                              gene=gene)))) +
 
 
     geom_errorbar(data=out_summed, 
-      aes(x=Nuc, ymin=freq_avg-se, ymax=freq_avg+se, color=Condition, width=0.2)) +
+      aes(x=1, ymin=freq_avg-se, ymax=freq_avg+se, color=Condition, width=0.2)) +
 
     # Themeing
     common_theme() +
     scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill")) + 
+    theme(
+      axis.title.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.text.x = element_blank(),
+      panel.border = element_rect(color="black", size=1.5)
+    ) +
 		
 
     #Axes
@@ -412,7 +418,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   if (pdisplay){
     pvals <- lapply(pvals, round, digits=4)
     pvals <- paste0("p=", pvals)
-    plt <- plt + geom_text(data=out_summed, aes(x=Nuc, y=ymax, label=append(pvals, c("", "", "", "")))) # this is dumb, but it works
+    plt <- plt + geom_text(data=out_summed, aes(x=1, y=ymax, label=append(pvals, c("", "", "", "")))) # this is dumb, but it works
   }
 
 
