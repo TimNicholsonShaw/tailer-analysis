@@ -47,8 +47,8 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     # Loop through positions, find cumulative percentage
     for (x in c(start:stop)){ 
       # Three_End + Tail_Length gives total tail
-      total_cum_sum <- sum(filter(df, Sample==sample, Three_End + Tail_Length <= x)$Count)/total
-      three_end_cum_sum <- sum(filter(df, Sample==sample, Three_End <= x)$Count)/total
+      total_cum_sum <- sum(filter(df, Sample==sample, Three_End <= x)$Count)/total
+      three_end_cum_sum <- sum(filter(df, Sample==sample, Three_End - Tail_Length <= x)$Count)/total
       #Add to dataframe
       out = rbind(out, c(x, total_cum_sum, three_end_cum_sum, sample, filter(df, Sample==sample)$Grouping[1]))
     }
@@ -130,74 +130,60 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
 
+
   #Pre-populate dataframe
-  out <- data.frame(Pos="", reads_at_end="", reads_start_A="", reads_start_C="", reads_start_G="", reads_start_T="", Sample="", Condition="")
+    out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
 
   for (sample in unique(df$Sample)){
     #save total number of reads for that gene in that sample
     total <- sum(filter(df, Sample==sample)$Count)
 
-    for (i in c(start:stop)){ #loop through region of interest
-      #save total number of reads that mapped to that end
-      reads_at_end <- sum(filter(df, Sample==sample, Three_End==i)$Count)
-      
-      #save how many reads have a tail that starts with each nucleotide
-      reads_start_A <- sum(filter(df, Sample==sample, Three_End==i, startsWith(Tail_Sequence, "A"))$Count)
-      reads_start_C <- sum(filter(df, Sample==sample, Three_End==i, startsWith(Tail_Sequence, "C"))$Count)
-      reads_start_G <- sum(filter(df, Sample==sample, Three_End==i, startsWith(Tail_Sequence, "G"))$Count)
-      reads_start_T <- sum(filter(df, Sample==sample, Three_End==i, startsWith(Tail_Sequence, "T"))$Count)
-      
-      #add to out df
-      out <- rbind(out, c(i, reads_at_end/total, reads_start_A/total, reads_start_C/total, 
-                          reads_start_G/total, reads_start_T/total, 
-                          sample, filter(df, Sample==sample)$Grouping[1]))
+    for (i in c(start:stop)) {#loop through tail lengths of interest
+      for (nuc in c("A", "C", "G", "T", "Genomic_Encoded")) {
+        if (nuc=="Genomic_Encoded"){
+          out <- rbind(out, c(i, sample, filter(df, Sample==sample)$Grouping[1], nuc, sum(filter(df, Sample==sample, Three_End==i)$Count)/total))
+        }
+        else{
 
-      # Convert columns to numeric types
-      out$reads_at_end = as.numeric(out$reads_at_end)
-      out$reads_start_A = as.numeric(out$reads_start_A)
-      out$reads_start_C = as.numeric(out$reads_start_C)
-      out$reads_start_G = as.numeric(out$reads_start_G)
-      out$reads_start_T = as.numeric(out$reads_start_T)
-      out$Pos = as.numeric(out$Pos)
+        
+        # Find frequency of each nucleotide at each position
+        frequency <- sum(filter(df, Sample==sample, substr(Tail_Sequence, i, i) == nuc)$Count)/total
+
+        # Add to out df
+        out <- rbind(out, c(i, sample, filter(df, Sample==sample)$Grouping[1], nuc, frequency))
+        }
+      }
     }
-  
   }
+  
+  
+  
   if (gimme){ # for debugging
     return(out)
   }
 
     #################### Data Pre-processing #######################
-  plt <- out[-1,] %>%
-    dplyr::group_by(Condition, Pos) %>%
-    dplyr::summarise(reads_at_end=mean(reads_at_end),
-                     reads_start_A=mean(reads_start_A),
-                     reads_start_C=mean(reads_start_C),
-                     reads_start_G=mean(reads_start_G),
-                     reads_start_T=mean(reads_start_T))
+  plt <- out[-1,] 
 
   plt$top_label<- "3' End Position"
-  plt<- plt %>%
-    pivot_longer(cols=c(reads_start_A, reads_start_C, reads_start_G, reads_start_T, reads_at_end), names_to="Tail")
+  plt$Frequency<-as.numeric(plt$Frequency)
+  plt$Pos<-as.numeric(plt$Pos)
 
-    plt$Tail <- factor(plt$Tail, levels=c('reads_start_A', 'reads_start_C', 'reads_start_G', 'reads_start_T', 'reads_at_end'))
-    plt$Tail <- recode_factor(plt$Tail, reads_start_A="A",
-                              reads_start_C="C",
-                              reads_start_G="G",
-                              reads_start_T="U",
-                              reads_at_end="No Tail")
-    
+  plt$Nuc <- factor(plt$Nuc, levels=c("A", "C", "G", "T", "Genomic_Encoded"))
+  plt$Nuc <- recode_factor(plt$Nuc, T="U")
+
   ######################### Plotting ############################
   plt <- plt %>%
 
     # main bar graph
-    ggplot(aes(x=Pos, y=value, color=Tail, fill=Tail)) +
+    ggplot(aes(x=Pos, y=Frequency, color=Nuc, fill=Nuc)) +
     geom_bar(stat='identity') +
-    facet_grid(rows=vars(Condition), cols=vars(top_label), switch="y") +
+    #facet_grid(rows=vars(Condition), cols=vars(top_label), switch="y") +
 
     # themeing
     common_theme() +
-    scale_color_manual(values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey"), aesthetics=c("color", "fill")) +
-  
+    scale_color_manual(values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey"), aesthetics=c("color", "fill"))
+    return(plt)
   # Axes
   scale_x_continuous(name="Position", 
 		expand=c(0,0),
