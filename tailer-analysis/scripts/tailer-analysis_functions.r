@@ -125,7 +125,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   return(plt)
 }
 
-tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors="", show_legend=TRUE, dots=FALSE, multi_locus=F) {
+tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F) {
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
@@ -175,28 +175,28 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
                      reads_start_G=mean(reads_start_G),
                      reads_start_T=mean(reads_start_T))
 
-  plt$top_label<- ""
+  plt$top_label<- "3' End Position"
   plt<- plt %>%
-    pivot_longer(cols=c(reads_start_A, reads_start_C, reads_start_G, reads_start_T, reads_at_end))
+    pivot_longer(cols=c(reads_start_A, reads_start_C, reads_start_G, reads_start_T, reads_at_end), names_to="Tail")
 
-    plt$name <- factor(plt$name, levels=c('reads_start_A', 'reads_start_C', 'reads_start_G', 'reads_start_T', 'reads_at_end'))
-    plt$name <- recode_factor(plt$name, reads_start_A="A",
+    plt$Tail <- factor(plt$Tail, levels=c('reads_start_A', 'reads_start_C', 'reads_start_G', 'reads_start_T', 'reads_at_end'))
+    plt$Tail <- recode_factor(plt$Tail, reads_start_A="A",
                               reads_start_C="C",
                               reads_start_G="G",
-                              reads_start_T="T",
+                              reads_start_T="U",
                               reads_at_end="No Tail")
     
   ######################### Plotting ############################
   plt <- plt %>%
 
     # main bar graph
-    ggplot(aes(x=Pos, y=value, color=name, fill=name)) +
+    ggplot(aes(x=Pos, y=value, color=Tail, fill=Tail)) +
     geom_bar(stat='identity') +
     facet_grid(rows=vars(Condition), cols=vars(top_label), switch="y") +
 
     # themeing
     common_theme() +
-    scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill")) +
+    scale_color_manual(values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey"), aesthetics=c("color", "fill")) +
   
   # Axes
   scale_x_continuous(name="Position", 
@@ -284,7 +284,9 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
     group_by(Condition, Pos, Nuc) %>% 
     summarise(freq_avg = mean(Frequency)) %>%
     ungroup()
-  plot_list <- list() # to be added to for cowplot
+  plot_list <- list() # to be added to for faceting
+
+  out$Nuc <- recode_factor(as.factor(out$Nuc), "T"="U") # Fix T -> U
 
   conditions <- c(unique(out$Condition))
 
@@ -299,9 +301,13 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 
     plot_list[[conditions[i]]] <- plot_df
   }
+  cs1 = make_col_scheme(chars=c('A', 'U', 'C', 'G'), 
+                      cols=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c")) 
+ 
+  	
 
     ggplot() + 
-      geom_logo(data=plot_list, method='custom', font='roboto_bold') +
+      geom_logo(data=plot_list, method='custom', font='roboto_bold', col_scheme=cs1) +
       facet_grid(rows=vars(seq_group), cols=vars(toString(gene)), switch='y') +
 
 
@@ -551,3 +557,9 @@ jens_colors <- c(
   "#4a6990"
 )
 
+AUCGcolors <- c(
+  	"#7EC0EE", # A color
+  	"#A2CD5A", # C color
+  	"#33a02c", # G color
+  	"#1f78b4" # U color
+  	) #note:needs to be alphabetical with respect to the nucleotides - otherwise *ing R changes the order
