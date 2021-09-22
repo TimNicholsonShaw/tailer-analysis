@@ -355,7 +355,6 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
                                                                                               "T"="U-tail",
                                                                                               gene=gene)))) +
 
-
     geom_errorbar(data=out_summed, size=1.5,
       aes(x=1, ymin=freq_avg-se, ymax=freq_avg+se, color=Condition, width=0.2)) +
 
