@@ -4,7 +4,7 @@ ui_files <- fluidPage(
   fileInput("tail_files", "Upload Tail Files", multiple=TRUE, accept=c(".csv")),
   DTOutput("sample_table"),
   actionButton("make_df_button", "Format Data"),
-  DTOutput("df_preview") %>% withSpinner(color="#0dc5c1")
+  verbatimTextOutput("df_preview") %>% withSpinner(color="#0dc5c1")
 )
 ui_candidate_finder <- fluidPage(
     sidebarLayout(
@@ -52,7 +52,7 @@ ui_cumulative_tail_plot <- fluidPage(
                 label="Make Plot"
             )
         ),
-        mainPanel("Cumulative Plot",
+        mainPanel(
             plotOutput("cum_plot") %>% withSpinner(color="#0dc5c1")
         )
     )
@@ -89,7 +89,7 @@ ui_tail_bar_graph <- fluidPage(
                 label="Make Plot"
             )
         ),
-        mainPanel("Tail Bar Graph",
+        mainPanel(
             plotOutput("tail_bar") %>% withSpinner(color="#0dc5c1")
         )
     )

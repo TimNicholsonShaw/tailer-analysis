@@ -148,9 +148,11 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     ggplot(aes(x=Pos, y=freq_avg, color=Nuc, fill=Nuc)) +
     geom_bar(stat='identity') +
     facet_grid(rows=vars(Condition), cols=vars(toString(gene)), switch="y") +
+    
 
     # themeing
     common_theme() +
+    theme(panel.spacing = unit(2, "lines")) + # Increase spacing between facets
     scale_color_manual(values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey"), aesthetics=c("color", "fill")) +
   # Axes
   scale_x_continuous(name="Position", 
@@ -266,7 +268,8 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 
 
       # Themeing
-      common_theme() +     
+      common_theme() +   
+      theme(panel.spacing = unit(2, "lines")) + # Increase spacing between facets  
 
       # Axes
       scale_x_continuous(
@@ -336,14 +339,14 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
     coord_cartesian() +
     theme_classic() +
 
-
+    
     # Individual dots
-    geom_jitter(aes(y=Frequency, color=Condition, x=1)) +
+    geom_jitter(aes(y=Frequency, color=Condition, x=1),size=1.5) +
 
     # Lines for mean
-    geom_linerange(data=out_summed, aes(y=freq_avg, 
-      xmax=2, 
-      xmin=0,
+    geom_linerange(data=out_summed, size=1.5, aes(y=freq_avg, 
+      xmax=1.5, 
+      xmin=0.5,
       color=Condition))+
 
     facet_grid(cols=vars(Nuc), rows=vars(toString(gene)), switch='y', labeller=labeller(Nuc=as_labeller(c("A"="A-tail", 
@@ -353,7 +356,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
                                                                                               gene=gene)))) +
 
 
-    geom_errorbar(data=out_summed, 
+    geom_errorbar(data=out_summed, size=1.5,
       aes(x=1, ymin=freq_avg-se, ymax=freq_avg+se, color=Condition, width=0.2)) +
 
     # Themeing
@@ -385,8 +388,6 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   return(plt)
 }
 
-
-
 ############## Helper Functions #####################
  multimap_gene_subsetter <- function(df, query){
   if (startsWith(query,"ENSG")){ # handler for ensids
@@ -411,7 +412,6 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
           )>0)),]
   }
 }
-
 dfBuilder <- function(files, grouping){
   # There's gotta be a better way to do this, please tell me at timnicholsonshaw@gmail.com
   # Prep dataframe
@@ -435,7 +435,6 @@ dfBuilder <- function(files, grouping){
   out$Tail_Length <- as.numeric(out$Tail_Length)
   return (out[-1,])
 }
-
 discover_candidates <- function(df, min=1){
 
   conditions <- unique(df$Grouping)

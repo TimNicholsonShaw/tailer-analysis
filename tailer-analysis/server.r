@@ -33,11 +33,17 @@ server <- function(input, output, session){
   })
 
   # Preview the data frame
-  output$df_preview <- renderDT({
+  output$df_preview <- renderText({
     req(input$make_df_button)
-    head(isolate(df()))
-    }, options = list(scrollX = TRUE)
-  )
+    out=""
+    for (group in unique(df()$Grouping)){
+      out <- paste0(out,group,
+                    " Condition:\n",
+                    length(unique(filter(df(), Grouping==group)$Sample)), 
+                    " Sample(s)\n")
+      }
+    out
+  })
 
 ########## Candidate finder backend ##############
 
@@ -53,7 +59,7 @@ server <- function(input, output, session){
   })
 
 ################### Cumulative Plotter #####################
-
+  output$cum_plot <- renderPlot({NULL})
   observeEvent(input$make_cum_plot, {
     output$cum_plot <- renderPlot({
       cumulativeTailPlotter(
@@ -69,7 +75,7 @@ server <- function(input, output, session){
     })
   })
 ################## Tail Bar Graph ########################
-
+  output$tail_bar <- renderPlot({NULL})
   observeEvent(input$make_tail_bar, {
     output$tail_bar <- renderPlot({
       tail_bar_grapher(
@@ -85,7 +91,7 @@ server <- function(input, output, session){
   })
 
 ################### Tail Logo Graph #####################
-
+  output$tail_logo <- renderPlot({NULL})
   observeEvent(input$make_tail_logo, {
     output$tail_logo <- renderPlot({
       tail_logo_grapher(
@@ -102,7 +108,7 @@ server <- function(input, output, session){
   })
 
 ####################### PT Nuc Graph ########################
-
+  output$pt_graph <- renderPlot({NULL})
   observeEvent(input$make_pt_graph, {
     output$pt_graph <- renderPlot({
       tail_pt_nuc_grapher(
