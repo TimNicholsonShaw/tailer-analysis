@@ -7,30 +7,7 @@ library(shinycssloaders)
 library(ggthemes)
 
 
-dfBuilder <- function(files, grouping){
-  # There's gotta be a better way to do this, please tell me at timnicholsonshaw@gmail.com
-  # Prep dataframe
-  out <- data.frame(Count="",
-                    EnsID="",
-                    Gene_Name="",
-                    Three_End="",
-                    Tail_Length="",
-                    Tail_Sequence="",
-                    Sample="",
-                    Grouping="")
-  for (i in c(1:length(files))){
-    temp_df <- read_csv(files[i]) 
-    temp_df$Sample <- files[i] # Add file name as sample name, maybe do prefix?
-    temp_df$Grouping <- grouping[i] # Add sample metadata
-
-    out <- rbind(out, temp_df)
-  }
-  out$Count <- as.numeric(out$Count)
-  out$Three_End <- as.numeric(out$Three_End)
-  out$Tail_Length <- as.numeric(out$Tail_Length)
-  return (out[-1,])
-}
-
+#################### Graphing Functions ##########################
 cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
@@ -132,49 +109,37 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 
 
   #Pre-populate dataframe
-    out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
+  out <- data.frame(Pos="", Nuc="", Freq="", Sample="", Condition="")
+  
+  ######## Make matrices and dataframes ##############
 
   for (sample in unique(df$Sample)){
-    #save total number of reads for that gene in that sample
-    total <- sum(filter(df, Sample==sample)$Count)
-
-    for (i in c(start:stop)) {#loop through tail lengths of interest
-      for (nuc in c("A", "C", "G", "T", "Genomic_Encoded")) {
-        if (nuc=="Genomic_Encoded"){
-          out <- rbind(out, c(i, sample, filter(df, Sample==sample)$Grouping[1], nuc, sum(filter(df, Sample==sample, Three_End==i)$Count)/total))
-        }
-        else{
-
-        
-        # Find frequency of each nucleotide at each position
-        frequency <- sum(filter(df, Sample==sample, substr(Tail_Sequence, i, i) == nuc)$Count)/total
-
-        # Add to out df
-        out <- rbind(out, c(i, sample, filter(df, Sample==sample)$Grouping[1], nuc, frequency))
-        }
-      }
-    }
+    temp_matrix <- tail_end_matrix_maker(filter(df, Sample==sample), xmin=start, xmax=stop)
+    out <- rbind(out, tail_end_matrix_to_df(temp_matrix, sample, filter(df, Sample==sample)$Grouping[1]))
   }
   
-  
-  
+  out <- out[-1,]
+
   if (gimme){ # for debugging
     return(out)
   }
 
     #################### Data Pre-processing #######################
-  plt <- out[-1,] 
+  
 
-  plt$top_label<- "3' End Position"
-  plt$Frequency<-as.numeric(plt$Frequency)
-  plt$Pos<-as.numeric(plt$Pos)
+  out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "T", "X"))
+  out$Nuc <- recode_factor(out$Nuc, T="U", X="Genomic Encoded End")
+  out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "U", "Genomic Encoded End"))
 
-  plt$Nuc <- factor(plt$Nuc, levels=c("A", "C", "G", "T", "Genomic_Encoded"))
-  plt$Nuc <- recode_factor(plt$Nuc, T="U")
-  plt <- plt %>%
+  out$Pos <- as.numeric(out$Pos)
+  out$Freq <- as.numeric(out$Freq)
+
+  
+  plt <- out %>%
     group_by(Condition, Pos, Nuc) %>% 
-    summarise(freq_avg = mean(Frequency)) %>%
+    summarise(freq_avg = mean(Freq)) %>%
     ungroup()
+
 
   ######################### Plotting ############################
   plt <- plt %>%
@@ -186,8 +151,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 
     # themeing
     common_theme() +
-    scale_color_manual(values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey"), aesthetics=c("color", "fill"))
-    return(plt)
+    scale_color_manual(values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey"), aesthetics=c("color", "fill")) +
   # Axes
   scale_x_continuous(name="Position", 
 		expand=c(0,0),
@@ -291,7 +255,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 
     plot_list[[conditions[i]]] <- plot_df
   }
-  cs1 = make_col_scheme(chars=c('A', 'U', 'C', 'G'), 
+  cs1 = make_col_scheme(chars=c('A', 'C', 'G', 'U'), 
                       cols=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c")) 
  
   	
@@ -421,6 +385,57 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   return(plt)
 }
 
+
+
+############## Helper Functions #####################
+ multimap_gene_subsetter <- function(df, query){
+  if (startsWith(query,"ENSG")){ # handler for ensids
+      query <- str_split(query, "\\|")[[1]] #splits query by | character
+      #if (length(query)==1) return(filter(df, EnsID==query))
+      
+      df[unlist(lapply(df$EnsID, function(x) length(
+          intersect(
+            str_split(x, "\\|")[[1]], 
+            query)
+          )>0)),]
+    
+  }
+  else{
+      query <- str_split(query, "\\|")[[1]]
+      #if (length(query)==1) return(filter(df, Gene_Name==query))
+    
+      df[unlist(lapply(df$Gene_Name, function(x) length(
+          intersect(
+            str_split(x, "\\|")[[1]], 
+            query)
+          )>0)),]
+  }
+}
+
+dfBuilder <- function(files, grouping){
+  # There's gotta be a better way to do this, please tell me at timnicholsonshaw@gmail.com
+  # Prep dataframe
+  out <- data.frame(Count="",
+                    EnsID="",
+                    Gene_Name="",
+                    Three_End="",
+                    Tail_Length="",
+                    Tail_Sequence="",
+                    Sample="",
+                    Grouping="")
+  for (i in c(1:length(files))){
+    temp_df <- read_csv(files[i]) 
+    temp_df$Sample <- files[i] # Add file name as sample name, maybe do prefix?
+    temp_df$Grouping <- grouping[i] # Add sample metadata
+
+    out <- rbind(out, temp_df)
+  }
+  out$Count <- as.numeric(out$Count)
+  out$Three_End <- as.numeric(out$Three_End)
+  out$Tail_Length <- as.numeric(out$Tail_Length)
+  return (out[-1,])
+}
+
 discover_candidates <- function(df, min=1){
 
   conditions <- unique(df$Grouping)
@@ -482,29 +497,55 @@ discover_candidates <- function(df, min=1){
   
 
 }
+tail_end_matrix_maker <- function(df, xmin, xmax){
+  positions <- c(xmin:xmax)
+  
+  tail_end_matrix <- matrix(0,5, length(positions))
+  rownames(tail_end_matrix) <- c("A", "C", "G", "T", "X")
+  colnames(tail_end_matrix) <- positions
+  total <- sum(df$Count)
+  
+  for (row in 1:nrow(df)) {
+    Three_End <- df[row, "Three_End"]
+    Tail_Sequence  <- df[row, "Tail_Sequence"]
+    count <- df[row, "Count"]
+    Tail_Length <- df[row, "Tail_Length"]
+    
+    if (is.na(Tail_Sequence)){
+      if(Three_End > xmax | Three_End < xmin) next
+      tail_end_matrix["X", toString(Three_End)] <- tail_end_matrix["X", toString(Three_End)] + count 
+      next
+    }
+    
+    start <- Three_End - Tail_Length
+    if(start<=xmax & start>=xmin){
+      tail_end_matrix["X", toString(start)] <- tail_end_matrix["X", toString(start)] + count
+    }
+    
 
- multimap_gene_subsetter <- function(df, query){
-  if (startsWith(query,"ENSG")){ # handler for ensids
-      query <- str_split(query, "\\|")[[1]] #splits query by | character
-      #if (length(query)==1) return(filter(df, EnsID==query))
+    for (i in 1:Tail_Length){
+      nuc <- substr(Tail_Sequence, i, i)
+      pos <- i+start
+      if (pos > xmax | pos < xmin) next
       
-      df[unlist(lapply(df$EnsID, function(x) length(
-          intersect(
-            str_split(x, "\\|")[[1]], 
-            query)
-          )>0)),]
-    
+      tail_end_matrix[nuc, toString(pos)] <- tail_end_matrix[nuc, toString(pos)] + count
+
+    }
+  
   }
-  else{
-      query <- str_split(query, "\\|")[[1]]
-      #if (length(query)==1) return(filter(df, Gene_Name==query))
-    
-      df[unlist(lapply(df$Gene_Name, function(x) length(
-          intersect(
-            str_split(x, "\\|")[[1]], 
-            query)
-          )>0)),]
+  tail_end_matrix/total
+}
+tail_end_matrix_to_df <- function(matrix, sample, condition){
+  out <- data.frame(Pos="", Nuc="", Freq="", Sample="", Condition="")
+  for (i in rownames(matrix)){
+    for (j in colnames(matrix)){
+      out <- rbind(out, c(j, i, matrix[i,j], sample, condition))
+    }
   }
+  out <- out[-1,]
+  out$Pos <- as.numeric(out$Pos)
+  out$Freq <- as.numeric(out$Freq)
+  out
 }
 
 ################### Pretty Making Functions ################
@@ -533,7 +574,6 @@ common_theme <- function() {
      strip.text = element_text(face="bold"),
     )
 }
-
 jens_colors <- c(
   "#0073c2", 
   "#efc000", 
@@ -546,10 +586,3 @@ jens_colors <- c(
 	"#a73030", 
   "#4a6990"
 )
-
-AUCGcolors <- c(
-  	"#7EC0EE", # A color
-  	"#A2CD5A", # C color
-  	"#33a02c", # G color
-  	"#1f78b4" # U color
-  	) #note:needs to be alphabetical with respect to the nucleotides - otherwise *ing R changes the order
