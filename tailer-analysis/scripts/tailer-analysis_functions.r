@@ -497,7 +497,7 @@ discover_candidates <- function(df, min=1){
 }
 tail_end_matrix_maker <- function(df, xmin, xmax){
   positions <- c(xmin:xmax)
-  
+  print(positions)
   tail_end_matrix <- matrix(0,5, length(positions))
   rownames(tail_end_matrix) <- c("A", "C", "G", "T", "X")
   colnames(tail_end_matrix) <- positions
@@ -523,9 +523,9 @@ tail_end_matrix_maker <- function(df, xmin, xmax){
 
     for (i in 1:Tail_Length){
       nuc <- substr(Tail_Sequence, i, i)
+      if (nuc=='N') next
       pos <- i+start
       if (pos > xmax | pos < xmin) next
-      
       tail_end_matrix[nuc, toString(pos)] <- tail_end_matrix[nuc, toString(pos)] + count
 
     }
