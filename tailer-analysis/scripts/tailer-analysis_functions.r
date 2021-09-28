@@ -497,7 +497,6 @@ discover_candidates <- function(df, min=1){
 }
 tail_end_matrix_maker <- function(df, xmin, xmax){
   positions <- c(xmin:xmax)
-  print(positions)
   tail_end_matrix <- matrix(0,5, length(positions))
   rownames(tail_end_matrix) <- c("A", "C", "G", "T", "X")
   colnames(tail_end_matrix) <- positions

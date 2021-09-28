@@ -74,6 +74,8 @@ server <- function(input, output, session){
       )
     })
   })
+  
+  
 ################## Tail Bar Graph ########################
   output$tail_bar <- renderPlot({NULL})
   observeEvent(input$make_tail_bar, {

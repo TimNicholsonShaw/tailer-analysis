@@ -1,4 +1,5 @@
 #Pieces
+library(periscope)
 ui_files <- fluidPage(
   #Input files and give them experimental groupings
   fileInput("tail_files", "Upload Tail Files", multiple=TRUE, accept=c(".csv")),
@@ -53,7 +54,10 @@ ui_cumulative_tail_plot <- fluidPage(
             )
         ),
         mainPanel(
-            plotOutput("cum_plot") %>% withSpinner(color="#0dc5c1")
+            plotOutput("cum_plot") %>% withSpinner(color="#0dc5c1"), 
+            downloadablePlotUI("cum_plot",
+                               downloadtypes=c("png", "csv"))
+            
         )
     )
 )
