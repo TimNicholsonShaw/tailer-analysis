@@ -1,5 +1,65 @@
+# Modular Pieces
+download_button_ui <- function(id){
+  ns <- NS(id)
+  tagList(
+    downloadButton(ns("plot_download"), "Download Plot"),
+    numericInput(ns("height"), "height", value=1000),
+    numericInput(ns("width"), "width", value=1000)
+  )
+}
+
+test_options_ui <- function(id, dots=F){
+  ns <- NS(id)
+  tags<- tagList(
+    textInput(ns("gene_name"), "Gene Name"),
+    checkboxInput(ns("multi_loc"), "Multi-Locus Gene"),
+    numericInput(ns("x_min"), "Minimum Position", value=-10),
+    numericInput(ns("x_max"), "Maximum Position", value=10),
+    numericInput(ns("y_min"), "Minimum Fraction", value=0),
+    numericInput(ns("y_max"), "Maximum Fraction", value=1),
+    )
+  if (dots==T) {tags <- tagAppendChild(tags, checkboxInput("dots", "Dots?"))}
+  tags
+}
+
+test_plot_ui <- function(id){
+  ns<-(NS(id))
+  tagList(
+    actionButton(ns("make_plot"), "Make Plot"),
+    plotOutput(ns("plot")),
+    downloadButton(ns("download_plot"), "Download Plot"),
+    fluidRow(
+      column(6,numericInput(ns("height"), "Plot Height", value=400)),
+      column(6, numericInput(ns("width"), "Plot Width", value=400))
+    )
+  )
+}
+
+plot_page_ui <- function(id){
+  ns <-NS(id)
+  tagList(
+    sidebarLayout(
+    sidebarPanel(
+      textInput(ns("gene_name"), "Gene Name"),
+      numericInput(ns("x_min"), "Minimum Position", value=-10),
+      numericInput(ns("x_max"), "Maximum Position", value=10),
+      numericInput(ns("y_min"), "Minimum Fraction", value=0),
+      numericInput(ns("y_max"), "Maximum Fraction", value=1),
+      actionButton(ns("make_plot"), "Make Plot")
+    ),
+    mainPanel(
+      plotOutput(ns("plot"))%>% withSpinner(color="#0dc5c1"),
+      downloadButton(ns("download_plot"), "Download Plot"),
+      fluidRow(
+        column(6,numericInput(ns("height"), "Plot Height", value=400)),
+        column(6, numericInput(ns("width"), "Plot Width", value=400))
+        )
+      )
+    )
+  )
+}
+
 #Pieces
-library(periscope)
 ui_files <- fluidPage(
   #Input files and give them experimental groupings
   fileInput("tail_files", "Upload Tail Files", multiple=TRUE, accept=c(".csv")),
@@ -54,10 +114,8 @@ ui_cumulative_tail_plot <- fluidPage(
             )
         ),
         mainPanel(
-            plotOutput("cum_plot") %>% withSpinner(color="#0dc5c1"), 
-            downloadablePlotUI("cum_plot",
-                               downloadtypes=c("png", "csv"))
-            
+            plotOutput("cum_plot") %>% withSpinner(color="#0dc5c1"),
+            download_button_ui("cum_plot_download")
         )
     )
 )
@@ -180,6 +238,8 @@ ui_pt_graph <- fluidPage(
     )
 )
 
+
+
 # Actual UI declaration
 ui <- fluidPage(
     titlePanel(
@@ -188,9 +248,19 @@ ui <- fluidPage(
     tabsetPanel(
         tabPanel("File Upload", ui_files),
         tabPanel("Candidate Finder", ui_candidate_finder),
-        tabPanel("Cumulative Plot", ui_cumulative_tail_plot),
+        tabPanel("Cumulative Plot", plot_page_ui("cum_plot")),
         tabPanel("Tail Bar Graph", ui_tail_bar_graph),
         tabPanel("Tail Logo Plot", ui_tail_logo_plot),
-        tabPanel("Post-Transcriptional Tailing", ui_pt_graph)
+        tabPanel("Post-Transcriptional Tailing", ui_pt_graph),
+        tabPanel("test", fluidPage(sidebarLayout(
+          sidebarPanel(
+            test_options_ui("test", dots=T)
+          ),
+          mainPanel(test_plot_ui("test_plot"),
+                    verbatimTextOutput("debug"))
+          
+          #mainPanel(plotOutput("test_plot"))
+        )))
     )
 )
+
