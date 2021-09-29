@@ -1,19 +1,5 @@
 # Modular Pieces
-download_button_server <- function(id, plot){
-  moduleServer(
-    id,
-    function(input, output, session){
-      output$plot_download <- downloadHandler(
-        filename=paste("test", ".png", sep=""),
-        content=function(file){
-          png(file, height=input$height, width=input$width)
-          print(plot)
-          dev.off()
-        }
-      )
-    }
-  )
-}
+
 
 plot_page_server <- function(id, dataframe, plot_fun, ...){
   moduleServer(
@@ -38,7 +24,7 @@ plot_page_server <- function(id, dataframe, plot_fun, ...){
 }
   
 
-test_options_server <- function(id){
+options_server <- function(id){
   moduleServer(
     id,
     function(input, output, session){
@@ -49,25 +35,49 @@ test_options_server <- function(id){
         x_max=input$x_max,
         y_min=input$y_min,
         y_max=input$y_max,
-        dots=input$dots
+        dots=input$dots,
+        analysis_min=input$analysis_min,
+        analysis_max=input$analysis_max
       ))
-      
     }
-    
   )
 }
 
-test_plot_server <- function(id, plt){
+plot_server <- function(id, plt){
   moduleServer(
     id,
     function(input, output, session){
-      output$plot <- renderPlot({plt()})
+      observeEvent(input$make_plot, {
+        output$plot <- renderPlot({isolate(plt())})
+        
+      })
+
     }
   )
 }
 
 
 server <- function(input, output, session){
+  
+################### Cumulative Plotter #####################
+  #plot_page_server("cum_plot", df(), cumulativeTailPlotter, ymax=0.5)
+  cum_plot_options <- reactive({options_server("cum_plot")})
+  
+  
+  cum_plot <- reactive({
+    print(cumulativeTailPlotter(df(), 
+                          cum_plot_options()$gene_name,
+                          start=cum_plot_options()$x_min,
+                          stop=cum_plot_options()$x_max,
+                          ymin=cum_plot_options()$y_min,
+                          ymax=cum_plot_options()$y_max,
+                          dots=cum_plot_options()$dots,
+                          multi_locus=cum_plot_options()$multi_loc
+                        ))
+  })
+  plot_server("cum_plot", cum_plot)
+  
+  output$test <- renderPlot(cum_plot())
 
 ############### File input backend #######################
   #Put file dataframe into a reactive value
@@ -126,9 +136,7 @@ server <- function(input, output, session){
       isolate(cans())
   })
 
-################### Cumulative Plotter #####################
-#plot_page_server("cum_plot", df(), cumulativeTailPlotter, ymax=0.5)
-  
+
   
 ################## Tail Bar Graph ########################
   output$tail_bar <- renderPlot({NULL})
@@ -180,22 +188,6 @@ server <- function(input, output, session){
   opt <- reactive({test_options_server("test")})
   output$test_text <- renderText(opt())
   
-  
-  ############## Test #######################
-  test_opt <- reactive({test_options_server("test")})
-  
-  temp_plot <- reactive({
-    cumulativeTailPlotter(df(), 
-                          test_opt()$gene_name,
-                          start=test_opt()$x_min,
-                          stop=test_opt()$x_max)
-    })
-  
-  test_plot_server("test_plot", temp_plot)
-
-  
-  
-
-}
+}  
 
 
