@@ -8,13 +8,14 @@ library(ggthemes)
 
 
 #################### Graphing Functions ##########################
-cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100){
+cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
   df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
+  df$Three_End <- df$Three_End - mature_end
 
   # Pre-populate dataframe
   out = data.frame(Pos="", Total_Percentage="", Three_End_Percentage="",  Sample="", Condition="")

@@ -13,7 +13,8 @@ options_server <- function(id){
         dots=input$dots,
         analysis_min=input$analysis_min,
         analysis_max=input$analysis_max,
-        pdisplay=input$pdisplay
+        pdisplay=input$pdisplay,
+        mature_end=input$mature_end
       ))
     }
   )
@@ -123,7 +124,8 @@ server <- function(input, output, session){
                           dots=cum_plot_options()$dots,
                           multi_locus=cum_plot_options()$multi_loc,
                           analysis_min=cum_plot_options()$analysis_min,
-                          analysis_max=cum_plot_options()$analysis_max
+                          analysis_max=cum_plot_options()$analysis_max,
+                          mature_end=cum_plot_options()$mature_end
                             
     )
   })
@@ -143,7 +145,8 @@ server <- function(input, output, session){
                        #dots=tail_bar_options()$dots,
                        multi_locus=tail_bar_options()$multi_loc,
                        analysis_min=tail_bar_options()$analysis_min,
-                       analysis_max=tail_bar_options()$analysis_max
+                       analysis_max=tail_bar_options()$analysis_max,
+                       mature_end=tail_bar_options()$mature_end
                        )
     )
   })
