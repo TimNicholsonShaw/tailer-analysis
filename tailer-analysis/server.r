@@ -1,29 +1,4 @@
 # Modular Pieces
-
-
-plot_page_server <- function(id, dataframe, plot_fun, ...){
-  moduleServer(
-    id,
-    function(input, output, session){
-      output$plot <- renderPlot({NULL})
-      plt <- reactive({
-        plot_fun(
-          dataframe,
-          isolate(input$gene_name),
-          x_min=isolate(input$x_min),
-          x_max=isolate(input$x_max),
-          ymin=isolate(input$y_min),
-          ymax=isolate(input$y_max)
-        )
-      })
-      observeEvent(input$make_plot,{
-        output$plot <- renderPlot(plt())
-      })
-    }
-  )
-}
-  
-
 options_server <- function(id){
   moduleServer(
     id,
@@ -37,21 +12,40 @@ options_server <- function(id){
         y_max=input$y_max,
         dots=input$dots,
         analysis_min=input$analysis_min,
-        analysis_max=input$analysis_max
+        analysis_max=input$analysis_max,
+        pdisplay=input$pdisplay
       ))
     }
   )
 }
 
-plot_server <- function(id, plt){
+plot_server <- function(id, plt, plottype=""){
   moduleServer(
     id,
     function(input, output, session){
+      flag <- F
+      if (flag==F){
+        output$plot <- renderPlot({NULL})
+        flag <-T
+      }
       observeEvent(input$make_plot, {
-        output$plot <- renderPlot({isolate(plt())})
-        
+        output$plot <- renderPlot({isolate(plt()$plot)})
       })
-
+      
+      output$download_plot <- downloadHandler(
+        filename=paste(input$gene_name, plottype, ".png", sep=""),
+        content=function(file){
+          png(file, height=input$height, width=input$width)
+          print(plt())
+          dev.off()
+        }
+      )
+      output$download_data <- downloadHandler(
+        filename=paste(input$gene_name, "_data", "csv", sep="."),
+        content=function(file){
+          write.csv(plt()$data, file, row.names=F)
+        }
+      )
     }
   )
 }
@@ -59,26 +53,6 @@ plot_server <- function(id, plt){
 
 server <- function(input, output, session){
   
-################### Cumulative Plotter #####################
-  #plot_page_server("cum_plot", df(), cumulativeTailPlotter, ymax=0.5)
-  cum_plot_options <- reactive({options_server("cum_plot")})
-  
-  
-  cum_plot <- reactive({
-    print(cumulativeTailPlotter(df(), 
-                          cum_plot_options()$gene_name,
-                          start=cum_plot_options()$x_min,
-                          stop=cum_plot_options()$x_max,
-                          ymin=cum_plot_options()$y_min,
-                          ymax=cum_plot_options()$y_max,
-                          dots=cum_plot_options()$dots,
-                          multi_locus=cum_plot_options()$multi_loc
-                        ))
-  })
-  plot_server("cum_plot", cum_plot)
-  
-  output$test <- renderPlot(cum_plot())
-
 ############### File input backend #######################
   #Put file dataframe into a reactive value
   values <- reactiveValues(df=NULL) 
@@ -135,59 +109,75 @@ server <- function(input, output, session){
       req(input$find_cans_button)
       isolate(cans())
   })
-
-
+################### Cumulative Plotter #####################
+  cum_plot_options <- reactive({options_server("cum_plot")})
+  
+  
+  cum_plot <- reactive({
+    cumulativeTailPlotter(df(), 
+                                cum_plot_options()$gene_name,
+                                start=cum_plot_options()$x_min,
+                                stop=cum_plot_options()$x_max,
+                                ymin=cum_plot_options()$y_min,
+                                ymax=cum_plot_options()$y_max,
+                                dots=cum_plot_options()$dots,
+                                multi_locus=cum_plot_options()$multi_loc
+    )
+  })
+  plot_server("cum_plot", cum_plot, plottype="cumulative_plot")
   
 ################## Tail Bar Graph ########################
-  output$tail_bar <- renderPlot({NULL})
-  observeEvent(input$make_tail_bar, {
-    output$tail_bar <- renderPlot({
-      tail_bar_grapher(
-        df(),
-        isolate(input$tail_bar_gene_name),
-        start=isolate(input$tail_bar_x_min),
-        stop=isolate(input$tail_bar_x_max),
-        ymin=isolate(input$tail_bar_y_min),
-        ymax=isolate(input$tail_bar_y_max),
-        multi_locus=isolate(input$tail_bar_multiloc)
-      )
-    })
+  tail_bar_options <- reactive({options_server("tail_bar")})
+    
+  tail_bar_plot <- reactive({
+    print(
+      tail_bar_grapher(df(),
+                       tail_bar_options()$gene_name,
+                       start=tail_bar_options()$x_min,
+                       stop=tail_bar_options()$x_max,
+                       ymin=tail_bar_options()$y_min,
+                       ymax=tail_bar_options()$y_max,
+                       #dots=tail_bar_options()$dots,
+                       multi_locus=tail_bar_options()$multi_loc
+                       )
+    )
   })
+  
+  plot_server("tail_bar", tail_bar_plot, plottype="tail_bar")
 
 ################### Tail Logo Graph #####################
-  output$tail_logo <- renderPlot({NULL})
-  observeEvent(input$make_tail_logo, {
-    output$tail_logo <- renderPlot({
-      tail_logo_grapher(
-        df(),
-        isolate(input$tail_logo_gene_name),
-        xmin=isolate(input$tail_logo_xmin),
-        xmax=isolate(input$tail_logo_xmax),
-        ymin=isolate(input$tail_logo_ymin),
-        ymax=isolate(input$tail_logo_ymax),
-        multi_locus=isolate(input$tail_logo_multiloc)
-      )
-
-    })
+  tail_logo_options <- reactive({options_server("tail_logo")})
+  
+  tail_logo_plot <- reactive({
+    print(
+      tail_logo_grapher(df(),
+                        tail_logo_options()$gene_name,
+                        xmin=1,
+                        xmax=tail_logo_options()$x_max,
+                        ymin=tail_logo_options()$y_min,
+                        ymax=tail_logo_options()$y_max,
+                        multi_locus = tail_logo_options()$multi_loc)
+    )
   })
+  plot_server("tail_logo", tail_logo_plot, plottype="tail_logo")
 
 ####################### PT Nuc Graph ########################
-  output$pt_graph <- renderPlot({NULL})
-  observeEvent(input$make_pt_graph, {
-    output$pt_graph <- renderPlot({
-      tail_pt_nuc_grapher(
-        df(),
-        isolate(input$pt_gene_name),
-        ymin=isolate(input$pt_ymin),
-        ymax=isolate(input$pt_ymax),
-        pdisplay=isolate(input$pt_pdisplay),
-        multi_locus=isolate(input$pt_multiloc)
-      )
-    })
-  })
-  opt <- reactive({test_options_server("test")})
-  output$test_text <- renderText(opt())
+  pt_tail_options <- reactive({options_server("pt_tail")})
   
-}  
+  pt_tail_plot <- reactive({
+    print(
+      tail_pt_nuc_grapher(df(),
+                          pt_tail_options()$gene_name,
+                          ymin=pt_tail_options()$y_min,
+                          ymax=pt_tail_options()$y_max,
+                          multi_locus=pt_tail_options()$multi_loc,
+                          pdisplay=pt_tail_options()$pdisplay
+                          )
+    )
+  })
+  
+  plot_server("pt_tail", pt_tail_plot, plottype="pt_tail")
+  
+}
 
 

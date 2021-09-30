@@ -1,6 +1,6 @@
 # Modular Pieces
 
-options_ui <- function(id, dots=F, position=T, analysis_window=F){
+options_ui <- function(id, dots=F, position=T, analysis_window=F, pdisplay=F){
   ns <- NS(id)
   tags<- tagList(
     textInput(ns("gene_name"), "Gene Name"),
@@ -18,6 +18,9 @@ options_ui <- function(id, dots=F, position=T, analysis_window=F){
     tags <- tagAppendChild(tags, numericInput(ns("analysis_min"), "Start of Analysis Window", value=-100))
     tags <- tagAppendChild(tags, numericInput(ns("analysis_max"), "End of Analysis Window", value=100))
   }
+  if (pdisplay==T){
+    tags <- tagAppendChild(tags, checkboxInput(ns("pdisplay"), "p values"))
+  }
   if (dots==T) {
     tags <- tagAppendChild(tags, checkboxInput(ns("dots"), "Dots?"))
     }
@@ -27,8 +30,9 @@ options_ui <- function(id, dots=F, position=T, analysis_window=F){
 plot_ui <- function(id){
   ns<-(NS(id))
   tagList(
-    plotOutput(ns("plot")),
+    plotOutput(ns("plot"))%>% withSpinner(color="#0dc5c1"),
     downloadButton(ns("download_plot"), "Download Plot"),
+    downloadButton(ns("download_data"), "Download Data"),
     fluidRow(
       column(6,numericInput(ns("height"), "Plot Height", value=400)),
       column(6, numericInput(ns("width"), "Plot Width", value=400))
@@ -36,10 +40,10 @@ plot_ui <- function(id){
   )
 }
 
-whole_plot_page_ui <- function(id, dots=F){
+whole_plot_page_ui <- function(id, dots=F, pdisplay=F){
   fluidPage(
     sidebarLayout(
-      sidebarPanel(options_ui(id, dots=dots)),
+      sidebarPanel(options_ui(id, dots=dots, pdisplay=pdisplay)),
       mainPanel(plot_ui(id))
     )
   )
@@ -79,8 +83,7 @@ ui <- fluidPage(
         tabPanel("Cumulative Plot", whole_plot_page_ui("cum_plot", dots=T)),
         tabPanel("Tail Bar Graph", whole_plot_page_ui("tail_bar")),
         tabPanel("Tail Logo Plot", whole_plot_page_ui("tail_logo")),
-        tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail")),
-        tabPanel("Test", plotOutput("test"))
+        tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T))
     )
 )
 

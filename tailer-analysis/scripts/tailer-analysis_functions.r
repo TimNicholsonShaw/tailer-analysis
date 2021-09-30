@@ -37,9 +37,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   out=out[-1,] # drop that weird first row
 
 
-  if (gimme) { # for debugging
-    return(out)
-  }
+
 
   ######################Plot Output#######################
   plt <- out %>%
@@ -51,6 +49,10 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
 
   plt$top_label="RNA 3'End"
   plt$left_label=""
+
+  #test
+  data_out<-plt
+
   plt<-plt %>%
   ggplot(aes(x=Pos, y=total_avg, color=Condition)) + 
 
@@ -99,7 +101,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     plt <- plt +   geom_point(data=out, aes(x=Pos, y=Total_Percentage))
   }
 
-  return(plt)
+  return(list(plot=plt, data=data_out))
 }
 
 tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F) {
@@ -128,8 +130,8 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   
 
   out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "T", "X"))
-  out$Nuc <- recode_factor(out$Nuc, T="U", X="Genomic Encoded End")
-  out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "U", "Genomic Encoded End"))
+  out$Nuc <- recode_factor(out$Nuc, T="U", X="Genome Encoded")
+  out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "U", "Genome Encoded"))
 
   out$Pos <- as.numeric(out$Pos)
   out$Freq <- as.numeric(out$Freq)
@@ -140,7 +142,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     summarise(freq_avg = mean(Freq)) %>%
     ungroup()
 
-
+  data <- plt
   ######################### Plotting ############################
   plt <- plt %>%
 
@@ -191,7 +193,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     #plt <- plt + geom_point(data=out[-1,], aes(x=Pos, y=reads_at_end))
   }
 
-  return(plt) 
+  return(list(data=data, plot=plt))
 }
 
 tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F) {
@@ -209,11 +211,13 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
 
-  out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
+  df <- mutate(df, Grouping=replace(Grouping, Grouping=="", " "))
 
+  out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
   for (sample in unique(df$Sample)){
     #save total number of reads for that gene in that sample
     total <- sum(filter(df, Sample==sample)$Count)
+
 
     for (i in c(xmin:xmax)) {#loop through tail lengths of interest
       for (nuc in c("A", "C", "G", "T")) {
@@ -253,16 +257,17 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
                 {. ->> nucs} %>% # Save intermediate to get nucleotide names
                 select(-Nuc) %>% # Remove Nuc column
                 as.matrix(nrow=4, ncol=ncol(nucs)-1) # ggseqlogo needs a probability matrix
-    rownames(plot_df) <- nucs$Nuc # Names from Nuc intermediate makes sure we don't get them out of order
 
+    rownames(plot_df) <- nucs$Nuc # Names from Nuc intermediate makes sure we don't get them out of order
     plot_list[[conditions[i]]] <- plot_df
   }
+  data <- plot_list
   cs1 = make_col_scheme(chars=c('A', 'C', 'G', 'U'), 
                       cols=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c")) 
  
   	
 
-    ggplot() + 
+    plt <- ggplot() + 
       geom_logo(data=plot_list, method='custom', font='roboto_bold', col_scheme=cs1) +
       facet_grid(rows=vars(seq_group), cols=vars(toString(gene)), switch='y') +
 
@@ -287,6 +292,8 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
         limits=c(0, ymax), 
         position = "right"
 	    ) 
+
+      return(list(data=data, plot=plt))
 }
 
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F){
@@ -320,7 +327,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   if(gimme){ # debugging
     return(out)
   }
-
+  data <- out
   # t-testing
   pvals = c()
   conditions = unique(out$Condition)
@@ -384,7 +391,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   }
 
 
-  return(plt)
+  return(list(data=data, plot=plt))
 }
 
 ############## Helper Functions #####################
@@ -446,9 +453,8 @@ discover_candidates <- function(df, min=1){
           format = "Finding candidates [:bar] :percent | :elapsed | Estimated eta: :eta",
           clear=FALSE)
 
-  out <- data.frame(Gene=NA, pval_three_end=NA, pval_tail_length=NA)
+  out <- data.frame(Gene=NA, pval_end_position=NA, pval_tail_length=NA)
   
- 
   withProgress( message="Finding Candidates", value=0, { # Progress bar wrapper for shiny
     for (i in 1:length(genes)) {
       pb$tick()
@@ -487,10 +493,10 @@ discover_candidates <- function(df, min=1){
 
   out<-out[-1,] # Remove crap line
   # Change to numeric types
-  out$pval_three_end <- as.numeric(out$pval_three_end)
+  out$pval_end_position <- as.numeric(out$pval_end_position)
   out$pval_tail_length <- as.numeric(out$pval_tail_length)
 
-  out <- out[order(out$pval_three_end),]
+  out <- out[order(out$pval_end_position),]
   return (out)
   
 
