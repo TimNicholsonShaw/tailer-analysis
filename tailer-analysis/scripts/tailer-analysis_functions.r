@@ -8,12 +8,13 @@ library(ggthemes)
 
 
 #################### Graphing Functions ##########################
-cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F){
+cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
+  df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
 
   # Pre-populate dataframe
   out = data.frame(Pos="", Total_Percentage="", Three_End_Percentage="",  Sample="", Condition="")
@@ -104,10 +105,11 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   return(list(plot=plt, data=data_out))
 }
 
-tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F) {
+tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100) {
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
+  df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
 
 
   #Pre-populate dataframe
@@ -210,6 +212,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
+  df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
 
   df <- mutate(df, Grouping=replace(Grouping, Grouping=="", " "))
 
@@ -300,6 +303,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
+  df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
 
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
 

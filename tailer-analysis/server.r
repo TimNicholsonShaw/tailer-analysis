@@ -115,13 +115,16 @@ server <- function(input, output, session){
   
   cum_plot <- reactive({
     cumulativeTailPlotter(df(), 
-                                cum_plot_options()$gene_name,
-                                start=cum_plot_options()$x_min,
-                                stop=cum_plot_options()$x_max,
-                                ymin=cum_plot_options()$y_min,
-                                ymax=cum_plot_options()$y_max,
-                                dots=cum_plot_options()$dots,
-                                multi_locus=cum_plot_options()$multi_loc
+                          cum_plot_options()$gene_name,
+                          start=cum_plot_options()$x_min,
+                          stop=cum_plot_options()$x_max,
+                          ymin=cum_plot_options()$y_min,
+                          ymax=cum_plot_options()$y_max,
+                          dots=cum_plot_options()$dots,
+                          multi_locus=cum_plot_options()$multi_loc,
+                          analysis_min=cum_plot_options()$analysis_min,
+                          analysis_max=cum_plot_options()$analysis_max
+                            
     )
   })
   plot_server("cum_plot", cum_plot, plottype="cumulative_plot")
@@ -138,7 +141,9 @@ server <- function(input, output, session){
                        ymin=tail_bar_options()$y_min,
                        ymax=tail_bar_options()$y_max,
                        #dots=tail_bar_options()$dots,
-                       multi_locus=tail_bar_options()$multi_loc
+                       multi_locus=tail_bar_options()$multi_loc,
+                       analysis_min=tail_bar_options()$analysis_min,
+                       analysis_max=tail_bar_options()$analysis_max
                        )
     )
   })
@@ -156,7 +161,8 @@ server <- function(input, output, session){
                         xmax=tail_logo_options()$x_max,
                         ymin=tail_logo_options()$y_min,
                         ymax=tail_logo_options()$y_max,
-                        multi_locus = tail_logo_options()$multi_loc)
+                        multi_locus = tail_logo_options()$multi_loc
+                        )
     )
   })
   plot_server("tail_logo", tail_logo_plot, plottype="tail_logo")

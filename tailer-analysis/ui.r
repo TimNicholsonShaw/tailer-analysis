@@ -40,10 +40,10 @@ plot_ui <- function(id){
   )
 }
 
-whole_plot_page_ui <- function(id, dots=F, pdisplay=F){
+whole_plot_page_ui <- function(id, dots=F, pdisplay=F, analysis_window=F){
   fluidPage(
     sidebarLayout(
-      sidebarPanel(options_ui(id, dots=dots, pdisplay=pdisplay)),
+      sidebarPanel(options_ui(id, dots=dots, pdisplay=pdisplay, analysis_window=analysis_window)),
       mainPanel(plot_ui(id))
     )
   )
@@ -80,8 +80,8 @@ ui <- fluidPage(
     tabsetPanel(
         tabPanel("File Upload", ui_files),
         tabPanel("Candidate Finder", ui_candidate_finder),
-        tabPanel("Cumulative Plot", whole_plot_page_ui("cum_plot", dots=T)),
-        tabPanel("Tail Bar Graph", whole_plot_page_ui("tail_bar")),
+        tabPanel("Cumulative Plot", whole_plot_page_ui("cum_plot", dots=T, analysis_window=T)),
+        tabPanel("Tail Bar Graph", whole_plot_page_ui("tail_bar", analysis_window=T)),
         tabPanel("Tail Logo Plot", whole_plot_page_ui("tail_logo")),
         tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T))
     )
