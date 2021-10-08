@@ -109,7 +109,7 @@ server <- function(input, output, session){
   output$candidates <- renderDT({
       req(input$find_cans_button)
       isolate(cans())
-  })
+  }, rownames=FALSE)
 ################### Cumulative Plotter #####################
   cum_plot_options <- reactive({options_server("cum_plot")})
   

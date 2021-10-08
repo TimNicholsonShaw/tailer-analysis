@@ -5,6 +5,7 @@ library(progress)
 library(shiny)
 library(shinycssloaders)
 library(ggthemes)
+library(lemon)
 
 
 #################### Graphing Functions ##########################
@@ -49,7 +50,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
       three_end_avg = mean(Three_End_Percentage)
     ) 
 
-  plt$top_label="RNA 3'End"
+  plt$top_label=gene
   plt$left_label=""
 
   #test
@@ -82,11 +83,13 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   # Axes
   scale_x_continuous(name="3' end position", 
     expand=c(0,0),
-		limits=c(start,stop)) +
-  scale_y_continuous(name="Cumulative Fraction",  
+		limits=c(start,stop),
+    guide = guide_prism_minor()) +
+  scale_y_continuous(name="\nCumulative Fraction\n",  
 		expand=c(0,0), 
 		limits=c(ymin, ymax),
-		position = "right"
+		position = "right",
+    guide = guide_prism_minor()
 		) +  
 
   # Theming
@@ -100,7 +103,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   }
 
   if (dots) {
-    plt <- plt +   geom_point(data=out, aes(x=Pos, y=Total_Percentage))
+    plt <- plt +   geom_point(data=out, aes(x=Pos+0.5, y=Total_Percentage))
   }
 
   return(list(plot=plt, data=data_out))
@@ -152,40 +155,25 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     # main bar graph
     ggplot(aes(x=Pos, y=freq_avg, color=Nuc, fill=Nuc)) +
     geom_bar(stat='identity') +
-    facet_grid(rows=vars(Condition), cols=vars(toString(gene)), switch="y") +
+    facet_rep_grid(rows=vars(Condition), cols=vars(toString(gene)), switch="y") +
     
 
     # themeing
     common_theme() +
     theme(panel.spacing = unit(2, "lines")) + # Increase spacing between facets
-    scale_color_manual(values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey"), aesthetics=c("color", "fill")) +
+    #values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey")
+    scale_color_manual(values=c("#7EC0EE", "#33a02c", "#A2CD5A", "#1f78b4", "grey"), aesthetics=c("color", "fill")) +
   # Axes
   scale_x_continuous(name="Position", 
 		expand=c(0,0),
-		limits=c(start,stop)) +
-  scale_y_continuous(name="Fraction", 
+		limits=c(start,stop),
+    guide = guide_prism_minor()) +
+  scale_y_continuous(name="\nFraction\n", 
 		expand=c(0,0), 
 		limits=c(ymin, ymax),
-		position = "right"
-		) +
-  
-  # Some segments
-  geom_segment(aes(x=stop,xend=stop,
-                     y=ymin, 
-                     yend=ymax), 
-                 size=0.3) +
-    geom_segment(aes(x=start,xend=start,
-                     y=ymin, 
-                     yend=ymax), 
-                 size=0.3) +
-    geom_segment(aes(x=start,xend=stop,
-                     y=ymin, 
-                     yend=ymin), 
-                 size=0.3) +
-    geom_segment(aes(x=start,xend=stop,
-                     y=ymax, 
-                     yend=ymax), 
-                 size=0.3)
+		position = "right",
+    guide = guide_prism_minor()
+		) + theme(panel.spacing = unit(0.1, "lines"))
 
   # options
   if (show_legend == FALSE){
@@ -199,7 +187,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   return(list(data=data, plot=plt))
 }
 
-tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F) {
+tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F, analysis_min=-100, analysis_max=100) {
 
   # So percentages can be entered as parameters as well as fractions
   if (ymax>1){
@@ -273,12 +261,12 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 
     plt <- ggplot() + 
       geom_logo(data=plot_list, method='custom', font='roboto_bold', col_scheme=cs1) +
-      facet_grid(rows=vars(seq_group), cols=vars(toString(gene)), switch='y') +
+      facet_rep_grid(rows=vars(seq_group), cols=vars(toString(gene)), switch='y') +
 
 
       # Themeing
       common_theme() +   
-      theme(panel.spacing = unit(2, "lines")) + # Increase spacing between facets  
+      theme(panel.spacing = unit(0.1, "lines")) + # Increase spacing between facets  
 
       # Axes
       scale_x_continuous(
@@ -289,18 +277,19 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
         limits=c(0.5, xmax-xmin+1.5)
 	    ) +
       scale_y_continuous(
-        name="% Nucleotide",
-        breaks=seq(ymin, ymax, 0.1),
-        labels=seq(ymin*100, ymax*100, 10),
+        name="\nFraction Nucleotide\n",
+        breaks=seq(ymin, ymax, 0.2),
+        labels=seq(ymin, ymax, .2),
         expand=c(0,0),
         limits=c(0, ymax), 
-        position = "right"
+        position = "right",
+        guide = guide_prism_minor()
 	    ) 
 
       return(list(data=data, plot=plt))
 }
 
-tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F){
+tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100){
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
@@ -367,8 +356,8 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
                                                                                               "T"="U-tail",
                                                                                               gene=gene)))) +
 
-    geom_errorbar(data=out_summed, size=1.5,
-      aes(x=1, ymin=freq_avg-se, ymax=freq_avg+se, color=Condition, width=0.2)) +
+    geom_errorbar(data=out_summed, size=1,
+      aes(x=1, ymin=freq_avg-se, ymax=freq_avg+se, width=0)) +
 
     # Themeing
     common_theme() +
@@ -382,9 +371,10 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
 		
 
     #Axes
-    scale_y_continuous( 
+    scale_y_continuous(name="\nFrequency\n",
       limits=c(ymin-0.01, ymax), 
-      position = "right")
+      position = "right",
+      guide = guide_prism_minor())
 
 
   ######## options ############
@@ -458,7 +448,7 @@ discover_candidates <- function(df, min=1){
           format = "Finding candidates [:bar] :percent | :elapsed | Estimated eta: :eta",
           clear=FALSE)
 
-  out <- data.frame(Gene=NA, pval_end_position=NA, pval_tail_length=NA)
+  out <- data.frame(Gene=NA, pval_end_position=NA, pval_PT_tail=NA)
   
   withProgress( message="Finding Candidates", value=0, { # Progress bar wrapper for shiny
     for (i in 1:length(genes)) {
@@ -499,7 +489,7 @@ discover_candidates <- function(df, min=1){
   out<-out[-1,] # Remove crap line
   # Change to numeric types
   out$pval_end_position <- as.numeric(out$pval_end_position)
-  out$pval_tail_length <- as.numeric(out$pval_tail_length)
+  out$pval_PT_tail <- as.numeric(out$pval_PT_tail)
 
   out <- out[order(out$pval_end_position),]
   return (out)
@@ -563,7 +553,7 @@ common_theme <- function() {
                                          size = rel(1.2), hjust = 0.5),
      panel.background = element_rect(colour = NA),
      plot.background = element_rect(colour = NA),
-     panel.border = element_rect(colour = NA),
+     panel.border = element_rect(colour = "black", size=1),
      axis.title = element_text(face = "bold",size = rel(1)),
      axis.title.y = element_text(angle=90,vjust =2),
      axis.title.x = element_text(vjust = -0.2),
@@ -578,7 +568,7 @@ common_theme <- function() {
      legend.margin = unit(0, "cm"),
      legend.title = element_text(face="italic", size=rel(1)),
      plot.margin=unit(c(10,5,5,5),"mm"),
-     strip.background=element_rect(colour="#919191",fill="#919191"),
+     strip.background=element_rect(colour="#000000",fill="#b3b3b3"),
      strip.text = element_text(face="bold"),
     )
 }
