@@ -312,6 +312,8 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   # Change to numeric types
   out=out[-1,]
   out$Frequency <- as.numeric(out$Frequency)
+  out$Nuc <- recode_factor(out$Nuc, T="U")
+  out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "U"))
 
   out_summed <-out %>%
     group_by(Condition, Nuc) %>% 
@@ -334,7 +336,6 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
       pvals <- append(pvals, temp_val)
     }
   }
-
   ################ Plotting ##########################
   plt <- ggplot(out) + 
     coord_cartesian() +
@@ -342,31 +343,25 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
 
     
     # Individual dots
-    geom_jitter(aes(y=Frequency, color=Condition, x=1),size=1.5) +
+    geom_point(aes(y=Frequency, color=Condition, x=Nuc),size=1.5, position=position_jitter(width=.3)) +
 
     # Lines for mean
-    geom_linerange(data=out_summed, size=1.5, aes(y=freq_avg, 
-      xmax=1.5, 
-      xmin=0.5,
+    geom_linerange(data=out_summed, size=1.5, aes(y=freq_avg,  
+      xmin=rep(c(.6, 1.6, 2.6, 3.6), length(conditions)),
+      xmax=rep(c(1.4,2.4,3.4,4.4), length(conditions)),
       color=Condition))+
 
-    facet_grid(cols=vars(Nuc), rows=vars(toString(gene)), switch='y', labeller=labeller(Nuc=as_labeller(c("A"="A-tail", 
-                                                                                              "C"="C-tail",
-                                                                                              "G"="G-tail",
-                                                                                              "T"="U-tail",
-                                                                                              gene=gene)))) +
+    facet_grid(cols=vars(toString("PT-Tail")), rows=vars(toString(gene)), switch='y') +
 
     geom_errorbar(data=out_summed, size=1,
-      aes(x=1, ymin=freq_avg-se, ymax=freq_avg+se, width=0)) +
+      aes(x=Nuc, ymin=freq_avg-se, ymax=freq_avg+se, width=0)) +
 
     # Themeing
     common_theme() +
     scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill")) + 
     theme(
-      axis.title.x = element_blank(),
       axis.ticks.x = element_blank(),
-      axis.text.x = element_blank(),
-      panel.border = element_rect(color="black", size=1.5)
+      axis.title.x = element_blank()
     ) +
 		
 
@@ -374,7 +369,10 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
     scale_y_continuous(name="\nFrequency\n",
       limits=c(ymin-0.01, ymax), 
       position = "right",
-      guide = guide_prism_minor())
+      guide = guide_prism_minor()) +
+
+    scale_x_discrete(name="PT-Tail")
+
 
 
   ######## options ############
@@ -382,7 +380,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   if (pdisplay){
     pvals <- lapply(pvals, round, digits=4)
     pvals <- paste0("p=", pvals)
-    plt <- plt + geom_text(data=out_summed, aes(x=1, y=ymax, label=append(pvals, c("", "", "", "")))) # this is dumb, but it works
+    plt <- plt + geom_text(data=out_summed, aes(x=Nuc, y=ymax, label=append(pvals, c("", "", "", "")))) # this is dumb, but it works
   }
 
 
