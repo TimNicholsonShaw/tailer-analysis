@@ -34,9 +34,9 @@ plot_server <- function(id, plt, plottype=""){
       })
       
       output$download_plot <- downloadHandler(
-        filename=paste(input$gene_name, plottype, ".png", sep=""),
+        filename=paste(input$gene_name, plottype, ".tiff", sep=""),
         content=function(file){
-          png(file, height=input$height, width=input$width)
+          tiff(file, height=input$height, width=input$width, res=600)
           print(plt())
           dev.off()
         }
@@ -84,19 +84,31 @@ server <- function(input, output, session){
     req(input$make_df_button)
     dfBuilder(values$df$datapath, values$df$group)
   })
+  
+  dfVals <- reactiveValues(df=NULL)
 
   # Preview the data frame
   output$df_preview <- renderText({
     req(input$make_df_button)
+    dfVals$df <- dfBuilder(values$df$datapath, values$df$group)
     out=""
     for (group in unique(df()$Grouping)){
       out <- paste0(out,group,
                     " Condition:\n",
                     length(unique(filter(df(), Grouping==group)$Sample)), 
                     " Sample(s)\n")
-      }
+    }
     out
   })
+  
+  output$sample_order <- renderUI({
+    orderInput("sample_order", "Sample Order", unique(df()$Grouping))
+  })
+  
+  observeEvent(input$set_order_button,{
+    output$df_preview <- renderText(input$sample_order)
+    }
+  )
 
 ########## Candidate finder backend ##############
 
@@ -136,7 +148,7 @@ server <- function(input, output, session){
     
   tail_bar_plot <- reactive({
     print(
-      tail_bar_grapher(df(),
+      tail_bar_grapher(dfVals$df,
                        tail_bar_options()$gene_name,
                        start=tail_bar_options()$x_min,
                        stop=tail_bar_options()$x_max,
@@ -146,7 +158,8 @@ server <- function(input, output, session){
                        multi_locus=tail_bar_options()$multi_loc,
                        analysis_min=tail_bar_options()$analysis_min,
                        analysis_max=tail_bar_options()$analysis_max,
-                       mature_end=tail_bar_options()$mature_end
+                       mature_end=tail_bar_options()$mature_end,
+                       order=input$sample_order
                        )
     )
   })

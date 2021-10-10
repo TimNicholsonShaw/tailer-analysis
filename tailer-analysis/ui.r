@@ -37,16 +37,16 @@ plot_ui <- function(id){
     downloadButton(ns("download_plot"), "Download Plot"),
     downloadButton(ns("download_data"), "Download Data"),
     fluidRow(
-      column(6,numericInput(ns("height"), "Plot Height", value=400)),
-      column(6, numericInput(ns("width"), "Plot Width", value=400))
+      column(6,numericInput(ns("height"), "Plot Height", value=2500)),
+      column(6, numericInput(ns("width"), "Plot Width", value=3500))
     )
   )
 }
 
-whole_plot_page_ui <- function(id, dots=F, pdisplay=F, analysis_window=F, mature_end=F){
+whole_plot_page_ui <- function(id, dots=F, pdisplay=F, analysis_window=F, mature_end=F, position=T){
   fluidPage(
     sidebarLayout(
-      sidebarPanel(options_ui(id, dots=dots, pdisplay=pdisplay, analysis_window=analysis_window, mature_end=mature_end)),
+      sidebarPanel(options_ui(id, dots=dots, pdisplay=pdisplay, analysis_window=analysis_window, mature_end=mature_end, position=position)),
       mainPanel(plot_ui(id))
     )
   )
@@ -58,7 +58,10 @@ ui_files <- fluidPage(
   fileInput("tail_files", "Upload Tail Files", multiple=TRUE, accept=c(".csv")),
   DTOutput("sample_table"),
   actionButton("make_df_button", "Format Data"),
-  verbatimTextOutput("df_preview") %>% withSpinner(color="#0dc5c1")
+  verbatimTextOutput("df_preview") %>% withSpinner(color="#0dc5c1"),
+  uiOutput("sample_order"),
+  actionButton("set_order_button", "Set Order"),
+  DTOutput("test")
 )
 ui_candidate_finder <- fluidPage(
     sidebarLayout(
@@ -85,8 +88,8 @@ ui <- fluidPage(
         tabPanel("Candidate Finder", ui_candidate_finder),
         tabPanel("Cumulative Plot", whole_plot_page_ui("cum_plot", dots=T, analysis_window=T, mature_end=T)),
         tabPanel("Tail Bar Graph", whole_plot_page_ui("tail_bar", analysis_window=T, mature_end=T)),
-        tabPanel("Tail Logo Plot", whole_plot_page_ui("tail_logo")),
-        tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T))
+        tabPanel("Tail Logo Plot", whole_plot_page_ui("tail_logo", analysis_window=T, mature_end=T)),
+        tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T, analysis_window=T, mature_end=T, position=F))
     )
 )
 

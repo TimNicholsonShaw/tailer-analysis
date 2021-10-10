@@ -6,10 +6,12 @@ library(shiny)
 library(shinycssloaders)
 library(ggthemes)
 library(lemon)
+library(ggprism)
+library(grid)
 
 
 #################### Graphing Functions ##########################
-cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0){
+cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
@@ -37,6 +39,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   out$Total_Percentage <- as.numeric(out$Total_Percentage)
   out$Three_End_Percentage <- as.numeric(out$Three_End_Percentage)
   out$Pos <- as.numeric(out$Pos)
+  if (order!="") out$Condition <- factor(out$Condition, levels=order)
   out=out[-1,] # drop that weird first row
 
 
@@ -109,15 +112,17 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   return(list(plot=plt, data=data_out))
 }
 
-tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100) {
+tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
   df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
+  df$Three_End <- df$Three_End - mature_end
 
 
   #Pre-populate dataframe
   out <- data.frame(Pos="", Nuc="", Freq="", Sample="", Condition="")
+  
   
   ######## Make matrices and dataframes ##############
 
@@ -127,7 +132,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   }
   
   out <- out[-1,]
-
+  if (order!="") out$Condition <- factor(out$Condition, levels=order)
   if (gimme){ # for debugging
     return(out)
   }
@@ -142,7 +147,6 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   out$Pos <- as.numeric(out$Pos)
   out$Freq <- as.numeric(out$Freq)
 
-  
   plt <- out %>%
     group_by(Condition, Pos, Nuc) %>% 
     summarise(freq_avg = mean(Freq)) %>%
@@ -187,7 +191,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   return(list(data=data, plot=plt))
 }
 
-tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F, analysis_min=-100, analysis_max=100) {
+tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
 
   # So percentages can be entered as parameters as well as fractions
   if (ymax>1){
@@ -202,6 +206,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
   df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
+  df$Three_End <- df$Three_End - mature_end
 
   df <- mutate(df, Grouping=replace(Grouping, Grouping=="", " "))
 
@@ -225,6 +230,8 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   out=out[-1,]
   out$Pos <- as.numeric(out$Pos)
   out$Frequency <- as.numeric(out$Frequency)
+
+
   
   if(gimme){ # debugging
     return(out)
@@ -241,6 +248,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   out$Nuc <- recode_factor(as.factor(out$Nuc), "T"="U") # Fix T -> U
 
   conditions <- c(unique(out$Condition))
+  if (order!="") conditions<-order
 
   for (i in 1:length(conditions)){
     plot_df <- out %>% 
@@ -289,11 +297,12 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
       return(list(data=data, plot=plt))
 }
 
-tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100){
+tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
   df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
+  df$Three_End <- df$Three_End - mature_end
 
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
 
@@ -314,6 +323,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   out$Frequency <- as.numeric(out$Frequency)
   out$Nuc <- recode_factor(out$Nuc, T="U")
   out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "U"))
+  if (order!="") out$Condition <- factor(out$Condition, levels=order)
 
   out_summed <-out %>%
     group_by(Condition, Nuc) %>% 
@@ -432,6 +442,7 @@ dfBuilder <- function(files, grouping){
   out$Count <- as.numeric(out$Count)
   out$Three_End <- as.numeric(out$Three_End)
   out$Tail_Length <- as.numeric(out$Tail_Length)
+
   return (out[-1,])
 }
 discover_candidates <- function(df, min=1){
