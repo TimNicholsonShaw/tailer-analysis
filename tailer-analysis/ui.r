@@ -65,11 +65,12 @@ ui_candidate_finder <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             numericInput("min_cans", "Minimum Reads For a Candidate", 10, min=1),
-            actionButton("find_cans_button", "Find Candidates")
+            actionButton("find_cans_button", "Find Candidates"),
+            downloadButton("download_cans", "Download Data")
         ),
         mainPanel(
-            DTOutput("candidates") %>% withSpinner(color="#0dc5c1")
-        )
+            DTOutput("candidates") %>% withSpinner(color="#0dc5c1"),
+            )
     )
 )
 
@@ -84,8 +85,8 @@ ui <- fluidPage(
     tabsetPanel(
         tabPanel("File Upload", ui_files),
         tabPanel("Candidate Finder", ui_candidate_finder),
-        tabPanel("Cumulative Plot", whole_plot_page_ui("cum_plot", dots=T, analysis_window=T, mature_end=T)),
         tabPanel("Tail Bar Graph", whole_plot_page_ui("tail_bar", analysis_window=T, mature_end=T)),
+        tabPanel("Cumulative Plot", whole_plot_page_ui("cum_plot", dots=T, analysis_window=T, mature_end=T)),
         tabPanel("Tail Logo Plot", whole_plot_page_ui("tail_logo", analysis_window=T, mature_end=T)),
         tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T, analysis_window=T, mature_end=T, position=F))
     )

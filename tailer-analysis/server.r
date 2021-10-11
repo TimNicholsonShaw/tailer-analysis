@@ -82,15 +82,13 @@ server <- function(input, output, session){
   # Reactive dataframe to hold the combined data formatted by dfBuilder
   df <- reactive({
     req(input$make_df_button)
-    dfBuilder(values$df$datapath, values$df$group)
+    isolate(dfBuilder(values$df$datapath, values$df$group))
   })
   
-  dfVals <- reactiveValues(df=NULL)
 
   # Preview the data frame
   output$df_preview <- renderText({
     req(input$make_df_button)
-    dfVals$df <- dfBuilder(values$df$datapath, values$df$group)
     out=""
     for (group in unique(df()$Grouping)){
       out <- paste0(out,group,
@@ -118,6 +116,13 @@ server <- function(input, output, session){
       req(input$find_cans_button)
       isolate(cans())
   }, rownames=FALSE)
+  
+  output$download_cans<- downloadHandler(
+    filename="candidates.csv",
+    content=function(file){
+      write.csv(cans(), file, row.names=F)
+    }
+  )
 ################### Cumulative Plotter #####################
   cum_plot_options <- reactive({options_server("cum_plot")})
   
@@ -145,7 +150,7 @@ server <- function(input, output, session){
     
   tail_bar_plot <- reactive({
     print(
-      tail_bar_grapher(dfVals$df,
+      tail_bar_grapher(df(),
                        tail_bar_options()$gene_name,
                        start=tail_bar_options()$x_min,
                        stop=tail_bar_options()$x_max,
