@@ -59,9 +59,7 @@ ui_files <- fluidPage(
   DTOutput("sample_table"),
   actionButton("make_df_button", "Format Data"),
   verbatimTextOutput("df_preview") %>% withSpinner(color="#0dc5c1"),
-  uiOutput("sample_order"),
-  actionButton("set_order_button", "Set Order"),
-  DTOutput("test")
+  uiOutput("sample_order")
 )
 ui_candidate_finder <- fluidPage(
     sidebarLayout(

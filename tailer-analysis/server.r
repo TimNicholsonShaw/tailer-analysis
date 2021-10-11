@@ -100,15 +100,11 @@ server <- function(input, output, session){
     }
     out
   })
-  
+
   output$sample_order <- renderUI({
-    orderInput("sample_order", "Sample Order", unique(df()$Grouping))
+    orderInput("sample_order", "Drag to reorder samples", unique(df()$Grouping))
   })
   
-  observeEvent(input$set_order_button,{
-    output$df_preview <- renderText(input$sample_order)
-    }
-  )
 
 ########## Candidate finder backend ##############
 
@@ -137,7 +133,8 @@ server <- function(input, output, session){
                           multi_locus=cum_plot_options()$multi_loc,
                           analysis_min=cum_plot_options()$analysis_min,
                           analysis_max=cum_plot_options()$analysis_max,
-                          mature_end=cum_plot_options()$mature_end
+                          mature_end=cum_plot_options()$mature_end,
+                          order=input$sample_order
                             
     )
   })
@@ -177,7 +174,8 @@ server <- function(input, output, session){
                         xmax=tail_logo_options()$x_max,
                         ymin=tail_logo_options()$y_min,
                         ymax=tail_logo_options()$y_max,
-                        multi_locus = tail_logo_options()$multi_loc
+                        multi_locus = tail_logo_options()$multi_loc,
+                        order=input$sample_order
                         )
     )
   })
@@ -193,7 +191,8 @@ server <- function(input, output, session){
                           ymin=pt_tail_options()$y_min,
                           ymax=pt_tail_options()$y_max,
                           multi_locus=pt_tail_options()$multi_loc,
-                          pdisplay=pt_tail_options()$pdisplay
+                          pdisplay=pt_tail_options()$pdisplay,
+                          order=input$sample_order
                           )
     )
   })
