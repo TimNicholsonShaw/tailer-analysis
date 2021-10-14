@@ -17,8 +17,8 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
-  df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
-  df$Three_End <- df$Three_End - mature_end
+  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max)
+  df$End_Position <- df$End_Position - mature_end
 
   # Pre-populate dataframe
   out = data.frame(Pos="", Total_Percentage="", Three_End_Percentage="",  Sample="", Condition="")
@@ -29,8 +29,8 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     # Loop through positions, find cumulative percentage
     for (x in c(start:stop)){ 
       # Three_End + Tail_Length gives total tail
-      total_cum_sum <- sum(filter(df, Sample==sample, Three_End <= x)$Count)/total
-      three_end_cum_sum <- sum(filter(df, Sample==sample, Three_End - Tail_Length <= x)$Count)/total
+      total_cum_sum <- sum(filter(df, Sample==sample, End_Position <= x)$Count)/total
+      three_end_cum_sum <- sum(filter(df, Sample==sample, End_Position - Tail_Length <= x)$Count)/total
       #Add to dataframe
       out = rbind(out, c(x, total_cum_sum, three_end_cum_sum, sample, filter(df, Sample==sample)$Grouping[1]))
     }
@@ -116,8 +116,8 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
-  df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
-  df$Three_End <- df$Three_End - mature_end
+  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max)
+  df$End_Position <- df$End_Position - mature_end
 
 
   #Pre-populate dataframe
@@ -205,8 +205,9 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
-  df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
-  df$Three_End <- df$Three_End - mature_end
+  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max)
+  df$End_Position <- df$End_Position - mature_end
+
 
   df <- mutate(df, Grouping=replace(Grouping, Grouping=="", " "))
 
@@ -301,8 +302,8 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   if (multi_locus) df <- multimap_gene_subsetter(df, gene)
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
   else df <- filter(df, Gene_Name==gene) 
-  df <- filter(df, Three_End>=analysis_min, Three_End<=analysis_max)
-  df$Three_End <- df$Three_End - mature_end
+  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max)
+  df$End_Position <- df$End_Position - mature_end
 
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
 
@@ -403,11 +404,12 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
       query <- str_split(query, "\\|")[[1]] #splits query by | character
       #if (length(query)==1) return(filter(df, EnsID==query))
       
-      df[unlist(lapply(df$EnsID, function(x) length(
+      return (df[unlist(lapply(df$EnsID, function(x) length(
           intersect(
             str_split(x, "\\|")[[1]], 
             query)
-          )>0)),]
+          )>0)),])
+
     
   }
   else{
@@ -427,7 +429,7 @@ dfBuilder <- function(files, grouping){
   out <- data.frame(Count="",
                     EnsID="",
                     Gene_Name="",
-                    Three_End="",
+                    End_Position="",
                     Tail_Length="",
                     Tail_Sequence="",
                     Sample="",
@@ -440,8 +442,8 @@ dfBuilder <- function(files, grouping){
     out <- rbind(out, temp_df)
   }
   out$Count <- as.numeric(out$Count)
-  out$Three_End <- as.numeric(out$Three_End)
   out$Tail_Length <- as.numeric(out$Tail_Length)
+  out$End_Position <- as.numeric(out$End_Position)
 
   return (out[-1,])
 }
@@ -470,8 +472,8 @@ discover_candidates <- function(df, min=1){
 
 
       statistic_three_end <- tryCatch({
-        suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Three_End,
-                          filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Three_End))
+        suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position,
+                          filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position))
                           },
         error = function(e) e
       )
@@ -513,18 +515,18 @@ tail_end_matrix_maker <- function(df, xmin, xmax){
   total <- sum(df$Count)
   
   for (row in 1:nrow(df)) {
-    Three_End <- df[row, "Three_End"]
+    End_Position <- df[row, "End_Position"]
     Tail_Sequence  <- df[row, "Tail_Sequence"]
     count <- df[row, "Count"]
     Tail_Length <- df[row, "Tail_Length"]
     
     if (is.na(Tail_Sequence)){
-      if(Three_End > xmax | Three_End < xmin) next
-      tail_end_matrix["X", toString(Three_End)] <- tail_end_matrix["X", toString(Three_End)] + count 
+      if(End_Position> xmax | End_Position < xmin) next
+      tail_end_matrix["X", toString(End_Position)] <- tail_end_matrix["X", toString(End_Position)] + count 
       next
     }
     
-    start <- Three_End - Tail_Length
+    start <- End_Position - Tail_Length
     if(start<=xmax & start>=xmin){
       tail_end_matrix["X", toString(start)] <- tail_end_matrix["X", toString(start)] + count
     }
