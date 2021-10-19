@@ -14,11 +14,11 @@ library(grid)
 cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
-  if (multi_locus) df <- multimap_gene_subsetter(df, gene)
-  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene) #optional slower more exhaustivesubsetter
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handling for ENSIDs
   else df <- filter(df, Gene_Name==gene) 
-  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max)
-  df$End_Position <- df$End_Position - mature_end
+  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max) # throws out samples out of analysis range
+  df$End_Position <- df$End_Position - mature_end # mature end correction
 
   # Pre-populate dataframe
   out = data.frame(Pos="", Total_Percentage="", Three_End_Percentage="",  Sample="", Condition="")
@@ -56,7 +56,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   plt$top_label=gene
   plt$left_label=""
 
-  #test
+  # save the data for output
   data_out<-plt
 
   plt<-plt %>%
@@ -87,17 +87,18 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   scale_x_continuous(name="3' end position", 
     expand=c(0,0),
 		limits=c(start,stop),
-    guide = guide_prism_minor()) +
+    guide = guide_prism_minor()) + # add minor ticks
   scale_y_continuous(name="\nCumulative Fraction\n",  
 		expand=c(0,0), 
 		limits=c(ymin, ymax),
 		position = "right",
-    guide = guide_prism_minor()
+    guide = guide_prism_minor() # add minor ticks
 		) +  
 
   # Theming
     common_theme() +
-    scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill")) + facet_grid(left_label~top_label, switch='y')
+    scale_color_manual(values=c(jens_colors), aesthetics=c("color", "fill")) + 
+    facet_grid(left_label~top_label, switch='y')
 
   ######## Plot Options #########
 
@@ -105,7 +106,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     plt <- plt + theme(legend.position = "none")
   }
 
-  if (dots) {
+  if (dots) { # individual replicate dots
     plt <- plt +   geom_point(data=out, aes(x=Pos+0.5, y=Total_Percentage))
   }
 
@@ -113,11 +114,11 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
 }
 
 tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
-  if (multi_locus) df <- multimap_gene_subsetter(df, gene)
-  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene) # slower but more exhaustive subsetter
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handle ENSIDs
   else df <- filter(df, Gene_Name==gene) 
-  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max)
-  df$End_Position <- df$End_Position - mature_end
+  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max) # throws out anything outside of analysis window
+  df$End_Position <- df$End_Position - mature_end # user correction of mature-end location
 
 
   #Pre-populate dataframe
@@ -139,11 +140,12 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 
     #################### Data Pre-processing #######################
   
-
+  # Fix T -> U and put in the correct order
   out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "T", "X"))
   out$Nuc <- recode_factor(out$Nuc, T="U", X="Genome Encoded")
   out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "U", "Genome Encoded"))
 
+  # Fix numeric type
   out$Pos <- as.numeric(out$Pos)
   out$Freq <- as.numeric(out$Freq)
 
@@ -152,7 +154,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     summarise(freq_avg = mean(Freq)) %>%
     ungroup()
 
-  data <- plt
+  data <- plt # save data for output
   ######################### Plotting ############################
   plt <- plt %>%
 
@@ -165,18 +167,17 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     # themeing
     common_theme() +
     theme(panel.spacing = unit(2, "lines")) + # Increase spacing between facets
-    #values=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c", "grey")
     scale_color_manual(values=c("#7EC0EE", "#33a02c", "#A2CD5A", "#1f78b4", "grey"), aesthetics=c("color", "fill")) +
   # Axes
   scale_x_continuous(name="Position", 
 		expand=c(0,0),
 		limits=c(start,stop),
-    guide = guide_prism_minor()) +
+    guide = guide_prism_minor()) + # minor ticks
   scale_y_continuous(name="\nFraction\n", 
 		expand=c(0,0), 
 		limits=c(ymin, ymax),
 		position = "right",
-    guide = guide_prism_minor()
+    guide = guide_prism_minor() # minor ticks
 		) + theme(panel.spacing = unit(0.1, "lines"))
 
   # options
@@ -184,7 +185,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     plt <- plt + theme(legend.position = "none")
   }
 
-  if (dots) { #doesn't work yet
+  if (dots) { #doesn't work yet, but probably too messy
     #plt <- plt + geom_point(data=out[-1,], aes(x=Pos, y=reads_at_end))
   }
 
@@ -193,23 +194,15 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 
 tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
 
-  # So percentages can be entered as parameters as well as fractions
-  if (ymax>1){
-    ymax = ymax/100
-  }
-  if (ymin>1){
-    ymin = ymin/100
-  }
-
   ############ data pre-processing #################
-  if (multi_locus) df <- multimap_gene_subsetter(df, gene)
-  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene) # slower but more exhaustive subsetter
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handling for ensembl IDs
   else df <- filter(df, Gene_Name==gene) 
-  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max)
-  df$End_Position <- df$End_Position - mature_end
+  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max) # throws out things that are outside of analysis range
+  df$End_Position <- df$End_Position - mature_end # user correction for mature end
 
 
-  df <- mutate(df, Grouping=replace(Grouping, Grouping=="", " "))
+  df <- mutate(df, Grouping=replace(Grouping, Grouping=="", " ")) # needed blank grouping to be a character or else matrices blow up
 
   out <- data.frame(Pos="", Sample="", Condition="", Nuc="", Frequency="")
   for (sample in unique(df$Sample)){
@@ -262,7 +255,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
     rownames(plot_df) <- nucs$Nuc # Names from Nuc intermediate makes sure we don't get them out of order
     plot_list[[conditions[i]]] <- plot_df
   }
-  data <- plot_list
+  data <- plot_list # save data for output
   cs1 = make_col_scheme(chars=c('A', 'C', 'G', 'U'), 
                       cols=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c")) 
  
@@ -292,18 +285,18 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
         expand=c(0,0),
         limits=c(0, ymax), 
         position = "right",
-        guide = guide_prism_minor()
+        guide = guide_prism_minor() # add minor ticks
 	    ) 
 
       return(list(data=data, plot=plt))
 }
 
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
-  if (multi_locus) df <- multimap_gene_subsetter(df, gene)
-  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) 
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene) # slower but more exhaustive subsetter
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handling for ensembl IDs
   else df <- filter(df, Gene_Name==gene) 
-  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max)
-  df$End_Position <- df$End_Position - mature_end
+  df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max) # throws out observations outside of the analysis window
+  df$End_Position <- df$End_Position - mature_end # user correction for mature end
 
   out <- data.frame(Sample="", Condition="", Nuc="", Frequency="")
 
@@ -380,7 +373,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
     scale_y_continuous(name="\nFrequency\n",
       limits=c(ymin-0.01, ymax), 
       position = "right",
-      guide = guide_prism_minor()) +
+      guide = guide_prism_minor()) + # minor ticks
 
     scale_x_discrete(name="PT-Tail")
 
@@ -402,14 +395,12 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
  multimap_gene_subsetter <- function(df, query){
   if (startsWith(query,"ENSG")){ # handler for ensids
       query <- str_split(query, "\\|")[[1]] #splits query by | character
-      #if (length(query)==1) return(filter(df, EnsID==query))
       
       return (df[unlist(lapply(df$EnsID, function(x) length(
           intersect(
             str_split(x, "\\|")[[1]], 
             query)
           )>0)),])
-
     
   }
   else{
@@ -555,6 +546,62 @@ tail_end_matrix_to_df <- function(matrix, sample, condition){
   out$Pos <- as.numeric(out$Pos)
   out$Freq <- as.numeric(out$Freq)
   out
+}
+
+stat_matrix_maker <- function(df, gene, con1, con2){
+  df = filter(df, Gene_Name==gene) # Only looking at single gene
+                                  # Add option here for ensid
+  # Pulling out samples for the listed conditions
+  samples1 = unique(filter(df, Grouping==con1)$Sample) 
+  samples2 = unique(filter(df, Grouping==con2)$Sample)
+
+  # Matrix to hold results
+  end_position_matrix <- matrix(ncol=length(samples1), nrow=length(samples2))
+  #rownames(end_position_matrix) <- samples2
+  #colnames(end_position_matrix) <- samples1
+  custom_col_names <- c()
+  custom_row_names <- c()
+  for (i in 1:length(samples1)){
+    custom_col_names <- append(custom_col_names, paste0(con1, i))
+  }
+  for (i in 1:length(samples2)){
+    custom_row_names <- append(custom_row_names, paste0(con2, i))
+  }
+  colnames(end_position_matrix) <- custom_col_names
+  rownames(end_position_matrix) <- custom_row_names
+
+  tail_len_matrix <- matrix(ncol=length(samples1), nrow=length(samples2))
+  rownames(tail_len_matrix) <- custom_col_names
+  colnames(tail_len_matrix) <- custom_row_names
+
+
+  
+  for (i in c(1:length(samples1))){
+    for (j in c(1:length(samples2))){
+      a <- filter(df, Sample==samples1[i])$End_Position
+      b <- filter(df, Sample==samples2[j])$End_Position
+
+      end_position_matrix[i,j] <- suppressWarnings(ks.test(a,b)$p.value)
+    }
+  }
+
+  for (i in c(1:length(samples1))){
+    for (j in c(1:length(samples2))){
+      a <- filter(df, Sample==samples1[i])$Tail_Len
+      b <- filter(df, Sample==samples2[j])$Tail_Len
+
+      tail_len_matrix[i,j] <- suppressWarnings(ks.test(a,b)$p.value)
+    }
+  }
+
+  p.end_position_total <- suppressWarnings(ks.test(filter(df, Sample %in% samples1)$End_Position,filter(df, Sample %in% samples2)$End_Position)$p.value)
+  p.tail_len_total <- suppressWarnings(ks.test(filter(df, Sample %in% samples1)$Tail_Len,filter(df, Sample %in% samples2)$Tail_Len)$p.value)
+
+
+  return (list(p.mat_end_position=end_position_matrix, 
+                p.end_position_total=p.end_position_total,
+                p.mat_tail_len=tail_len_matrix,
+                p.tail_len_total=p.tail_len_total))
 }
 
 ################### Pretty Making Functions ################

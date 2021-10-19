@@ -74,6 +74,22 @@ ui_candidate_finder <- fluidPage(
     )
 )
 
+ui_statistics_page <- fluidPage(
+  sidebarLayout(
+    sidebarPanel(
+      uiOutput("con1"),
+      uiOutput("con2"),
+      textInput("stats_gene_name", "Gene Name")
+    ),
+    mainPanel(
+      tableOutput("end_position_tab"),
+      textOutput("end_position_text"),
+      tableOutput("tail_len_tab"),
+      textOutput("tail_len_text")
+      )
+    )
+)
+
 
 
 
@@ -88,7 +104,8 @@ ui <- fluidPage(
         tabPanel("Tail Bar Graph", whole_plot_page_ui("tail_bar", analysis_window=T, mature_end=T)),
         tabPanel("Cumulative Plot", whole_plot_page_ui("cum_plot", dots=T, analysis_window=T, mature_end=T)),
         tabPanel("Tail Logo Plot", whole_plot_page_ui("tail_logo", analysis_window=T, mature_end=T)),
-        tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T, analysis_window=T, mature_end=T, position=F))
+        tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T, analysis_window=T, mature_end=T, position=F)),
+        tabPanel("Statistics", ui_statistics_page)
     )
 )
 
