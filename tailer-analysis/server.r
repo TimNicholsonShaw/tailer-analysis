@@ -106,23 +106,35 @@ server <- function(input, output, session){
   
 
 ########## Candidate finder backend ##############
-
-  #  reactive to hold candidates in
-  cans <- reactive({
-    req(input$find_cans_button)
-    discover_candidates(isolate(df()), min=isolate(input$min_cans))
+  output$can_con1 <- renderUI({
+    selectInput("can_con1", "Condition 1", input$sample_order)
   })
-  # Output to dataframe 
-  output$candidates <- renderDT({
-      req(input$find_cans_button)
-      isolate(cans())
-  }, rownames=FALSE)
+  output$can_con2 <- renderUI({
+    selectInput("can_con2", "Condition 2", input$sample_order)
+  })
   
+  output$candidates <- NULL
+  
+  #  reactive to hold candidates in
+  observeEvent(input$find_cans_button, {
+  cans <- reactive({
+    discover_candidates(isolate(df()), min=isolate(input$min_cans), conditions=c(isolate(input$can_con1), isolate(input$can_con2)))
+    })
+    output$candidates <- renderDT({
+      isolate(cans())
+    }, rownames=FALSE)
+  
+  })
+  
+  
+  
+  # Output to dataframe 
   output$download_cans<- downloadHandler(
     filename="candidates.csv",
     content=function(file){
       write.csv(cans(), file, row.names=F)
     }
+  
   )
 ################### Cumulative Plotter #####################
   cum_plot_options <- reactive({options_server("cum_plot")})
@@ -207,10 +219,10 @@ server <- function(input, output, session){
   
 #################### Statistics Page #######################
   output$con1 <- renderUI({
-    selectInput("con1", "Condition 1", unique(df()$Grouping))
+    selectInput("con1", "Condition 1", input$sample_order)
   })
   output$con2 <- renderUI({
-    selectInput("con2", "Condition 2", unique(df()$Grouping))
+    selectInput("con2", "Condition 2", input$sample_order)
   })
   
   observeEvent(input$get_stats, {

@@ -438,9 +438,11 @@ dfBuilder <- function(files, grouping){
 
   return (out[-1,])
 }
-discover_candidates <- function(df, min=1){
+discover_candidates <- function(df, min=1, conditions=NA){
 
-  conditions <- unique(df$Grouping)
+  if (is.na(conditions)){
+    conditions <- unique(df$Grouping)
+    }
   if (length(conditions) != 2){ # Statistics is hard
     return("Candidate discovery doesn't support this number of conditions :(, try with just 2")
   }

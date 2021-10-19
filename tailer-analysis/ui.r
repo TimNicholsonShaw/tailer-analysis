@@ -65,6 +65,8 @@ ui_candidate_finder <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             numericInput("min_cans", "Minimum Reads For a Candidate", 10, min=1),
+            uiOutput("can_con1"),
+            uiOutput("can_con2"),
             actionButton("find_cans_button", "Find Candidates"),
             downloadButton("download_cans", "Download Data")
         ),
