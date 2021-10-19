@@ -213,11 +213,13 @@ server <- function(input, output, session){
     selectInput("con2", "Condition 2", unique(df()$Grouping))
   })
   
-  stats <- reactive({stat_matrix_maker(df(), input$stats_gene_name, input$con1, input$con2)})
-  output$end_position_tab <- renderTable(stats()$p.mat_end_position, rownames=T, digits=-6)
-  output$end_position_text <- renderText(stats()$p.end_position_total)
-  output$tail_len_tab <- renderTable(stats()$p.mat_tail_len, rownames=T, digits=-6)
-  output$tail_len_text <- renderText(stats()$p.tail_len_total)
+  observeEvent(input$get_stats, {
+    stats <- reactive({stat_matrix_maker(df(), isolate(input$stats_gene_name), isolate(input$con1), isolate(input$con2))})
+    output$end_position_tab <- renderTable(stats()$p.mat_end_position, rownames=T, digits=-6)
+    output$end_position_text <- renderText(stats()$p.end_position_total)
+    output$tail_len_tab <- renderTable(stats()$p.mat_tail_len, rownames=T, digits=-6)
+    output$tail_len_text <- renderText(stats()$p.tail_len_total)
+    })
   
 
 }

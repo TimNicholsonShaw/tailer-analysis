@@ -79,12 +79,17 @@ ui_statistics_page <- fluidPage(
     sidebarPanel(
       uiOutput("con1"),
       uiOutput("con2"),
-      textInput("stats_gene_name", "Gene Name")
+      textInput("stats_gene_name", "Gene Name"),
+      actionButton("get_stats", "Get Stats")
     ),
     mainPanel(
+      h3("End Position KS-test Matrix"),
       tableOutput("end_position_tab"),
+      h3("Pooled End Position KS-test"),
       textOutput("end_position_text"),
+      h3("Tail Length KS-test Matrix"),
       tableOutput("tail_len_tab"),
+      h3("Pooled Tail Length KS-test"),
       textOutput("tail_len_text")
       )
     )
