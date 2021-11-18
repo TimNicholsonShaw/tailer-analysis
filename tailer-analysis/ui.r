@@ -39,6 +39,9 @@ plot_ui <- function(id){
     fluidRow(
       column(6,numericInput(ns("height"), "Plot Height", value=2500)),
       column(6, numericInput(ns("width"), "Plot Width", value=3500))
+    ),
+    fluidRow(
+      DTOutput(ns("n_table"))
     )
   )
 }
@@ -72,6 +75,7 @@ ui_candidate_finder <- fluidPage(
         ),
         mainPanel(
             DTOutput("candidates") %>% withSpinner(color="#0dc5c1"),
+            DTOutput("n_candidates")
             )
     )
 )
@@ -85,13 +89,15 @@ ui_statistics_page <- fluidPage(
       actionButton("get_stats", "Get Stats")
     ),
     mainPanel(
-      h3("End Position KS-test Matrix"),
+      uiOutput("stat_gene_name"),
+      p("End Position KS-test Matrix"),
       tableOutput("end_position_tab"),
-      h3("Pooled End Position KS-test"),
+      p("Pooled End Position KS-test"),
       textOutput("end_position_text"),
-      h3("Tail Length KS-test Matrix"),
+      p(" "),
+      p("Tail Length KS-test Matrix"),
       tableOutput("tail_len_tab"),
-      h3("Pooled Tail Length KS-test"),
+      p("Pooled Tail Length KS-test"),
       textOutput("tail_len_text")
       )
     )

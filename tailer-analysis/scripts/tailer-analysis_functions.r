@@ -20,6 +20,8 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   df <- filter(df, End_Position>=analysis_min, End_Position<=analysis_max) # throws out samples out of analysis range
   df$End_Position <- df$End_Position - mature_end # mature end correction
 
+  if (nrow(df)==0) return(NULL) # Return a null if you didn't find any of that gene
+
   # Pre-populate dataframe
   out = data.frame(Pos="", Total_Percentage="", Three_End_Percentage="",  Sample="", Condition="")
 
@@ -84,7 +86,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     show.legend=FALSE) +
 
   # Axes
-  scale_x_continuous(name="3' end position", 
+  scale_x_continuous(name="Position", 
     expand=c(0,0),
 		limits=c(start,stop),
     guide = guide_prism_minor()) + # add minor ticks
@@ -110,7 +112,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     plt <- plt +   geom_point(data=out, aes(x=Pos+0.5, y=Total_Percentage))
   }
 
-  return(list(plot=plt, data=data_out))
+  return(list(plot=plt, data=data_out, n_table=n_sample_reporter(df, gene)))
 }
 
 tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
@@ -141,9 +143,9 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     #################### Data Pre-processing #######################
   
   # Fix T -> U and put in the correct order
-  out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "T", "X"))
-  out$Nuc <- recode_factor(out$Nuc, T="U", X="Genome Encoded")
-  out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "U", "Genome Encoded"))
+  out$Nuc <- factor(out$Nuc, levels=c("A", "T", "C", "G", "X"))
+  out$Nuc <- recode_factor(out$Nuc, T="U", X="Terminal Encoded")
+  out$Nuc <- factor(out$Nuc, levels=c("A", "U", "C", "G", "Terminal Encoded"))
 
   # Fix numeric type
   out$Pos <- as.numeric(out$Pos)
@@ -156,10 +158,11 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 
   data <- plt # save data for output
   ######################### Plotting ############################
+  plt$Nucleotide <- plt$Nuc # This is the easiest way to fix the legend unfortunately
   plt <- plt %>%
 
     # main bar graph
-    ggplot(aes(x=Pos, y=freq_avg, color=Nuc, fill=Nuc)) +
+    ggplot(aes(x=Pos, y=freq_avg, color=Nucleotide, fill=Nucleotide)) +
     geom_bar(stat='identity') +
     facet_rep_grid(rows=vars(Condition), cols=vars(toString(gene)), switch="y") +
     
@@ -167,7 +170,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     # themeing
     common_theme() +
     theme(panel.spacing = unit(2, "lines")) + # Increase spacing between facets
-    scale_color_manual(values=c("#7EC0EE", "#33a02c", "#A2CD5A", "#1f78b4", "grey"), aesthetics=c("color", "fill")) +
+    scale_color_manual(values=c("#7EC0EE", "#1f78b4", "#33a02c", "#A2CD5A", "grey"), aesthetics=c("color", "fill")) +
   # Axes
   scale_x_continuous(name="Position", 
 		expand=c(0,0),
@@ -178,7 +181,8 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 		limits=c(ymin, ymax),
 		position = "right",
     guide = guide_prism_minor() # minor ticks
-		) + theme(panel.spacing = unit(0.1, "lines"))
+		) + 
+    theme(panel.spacing = unit(0.1, "lines")) 
 
   # options
   if (show_legend == FALSE){
@@ -189,7 +193,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     #plt <- plt + geom_point(data=out[-1,], aes(x=Pos, y=reads_at_end))
   }
 
-  return(list(data=data, plot=plt))
+  return(list(data=data, plot=plt, n_table=n_sample_reporter(df, gene)))
 }
 
 tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
@@ -257,7 +261,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   }
   data <- plot_list # save data for output
   cs1 = make_col_scheme(chars=c('A', 'C', 'G', 'U'), 
-                      cols=c("#7EC0EE", "#1f78b4", "#A2CD5A", "#33a02c")) 
+                      cols=c("#7EC0EE","#33a02c", "#A2CD5A", "#1f78b4")) 
  
   	
 
@@ -288,7 +292,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
         guide = guide_prism_minor() # add minor ticks
 	    ) 
 
-      return(list(data=data, plot=plt))
+      return(list(data=data, plot=plt, n_table=n_sample_reporter(df, gene)))
 }
 
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
@@ -384,11 +388,11 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
   if (pdisplay){
     pvals <- lapply(pvals, round, digits=4)
     pvals <- paste0("p=", pvals)
-    plt <- plt + geom_text(data=out_summed, aes(x=Nuc, y=ymax, label=append(pvals, c("", "", "", "")))) # this is dumb, but it works
+    plt <- plt + geom_text(data=out_summed, size=4.5, aes(x=Nuc, y=ymax, label=append(pvals, c("", "", "", "")))) # this is dumb, but it works
   }
 
 
-  return(list(data=data, plot=plt))
+  return(list(data=data, plot=plt, n_table=n_sample_reporter(df, gene)))
 }
 
 ############## Helper Functions #####################
@@ -438,7 +442,7 @@ dfBuilder <- function(files, grouping){
 
   return (out[-1,])
 }
-discover_candidates <- function(df, min=1, conditions=NA){
+discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
 
   if (is.na(conditions)){
     conditions <- unique(df$Grouping)
@@ -452,43 +456,91 @@ discover_candidates <- function(df, min=1, conditions=NA){
           format = "Finding candidates [:bar] :percent | :elapsed | Estimated eta: :eta",
           clear=FALSE)
 
-  out <- data.frame(Gene=NA, pval_end_position=NA, pval_PT_tail=NA)
+  out <- data.frame(Gene=NA, pval_end_position=NA, pval_PT_tail=NA,delta_end_pos=NA, delta_PT_tail=NA, n_con1=NA, n_con2=NA)
   
-  withProgress( message="Finding Candidates", value=0, { # Progress bar wrapper for shiny
+  if (isShiny){
+    withProgress( message="Finding Candidates", value=0, { # Progress bar wrapper for shiny
+      for (i in 1:length(genes)) {
+        pb$tick()
+        incProgress(1/length(genes))
+        # toss if it doesn't meet the minimum number of reads
+        if (genes[i] == "None") next
+        if (nrow(filter(df, Grouping==conditions[1],Gene_Name==genes[i])) < min) next
+        if (nrow(filter(df, Grouping==conditions[2],Gene_Name==genes[i])) < min) next
+
+
+        statistic_three_end <- tryCatch({
+          suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position,
+                            filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position))
+                            },
+          error = function(e) e
+        )
+        
+        #Erros to NA
+        if(inherits(statistic_three_end, "error")) statistic_three_end$p.value <- NA
+
+
+        statistic_tail_length <- tryCatch({
+          suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Length,
+                            filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Length))
+                            },
+          error = function(e) e
+        )
+        
+        # Errors to NA
+        if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
+        # report how many observations in each condition
+        n <- n_condition_reporter(df, genes[i], conditions[1], conditions[2])
+
+        # calculate mean differences 
+
+        del_end <-  mean(filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position) - mean(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position)
+        del_tail <- mean(filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Len) - mean(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Len)
+
+        out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value, del_end,del_tail, n[1], n[2]))
+      }
+    }) 
+  }
+  else{
     for (i in 1:length(genes)) {
-      pb$tick()
-      incProgress(1/length(genes))
-      # toss if it doesn't meet the minimum number of reads
-      if (genes[i] == "None") next
-      if (nrow(filter(df, Grouping==conditions[1],Gene_Name==genes[i])) < min) next
-      if (nrow(filter(df, Grouping==conditions[2],Gene_Name==genes[i])) < min) next
+        # toss if it doesn't meet the minimum number of reads
+        if (genes[i] == "None") next
+
+        # can probably speed this up by calling filter once per condition and saving to variable
+        if (nrow(filter(df, Grouping==conditions[1],Gene_Name==genes[i])) < min) next
+        if (nrow(filter(df, Grouping==conditions[2],Gene_Name==genes[i])) < min) next
 
 
-      statistic_three_end <- tryCatch({
-        suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position,
-                          filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position))
-                          },
-        error = function(e) e
-      )
-      
-      #Erros to NA
-      if(inherits(statistic_three_end, "error")) statistic_three_end$p.value <- NA
+        statistic_three_end <- tryCatch({
+          suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position,
+                            filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position))
+                            },
+          error = function(e) e
+        )
+        
+        #Erros to NA
+        if(inherits(statistic_three_end, "error")) statistic_three_end$p.value <- NA
 
 
-      statistic_tail_length <- tryCatch({
-        suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Length,
-                          filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Length))
-                          },
-        error = function(e) e
-      )
-      
-      # Errors to NA
-      if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
-      
+        statistic_tail_length <- tryCatch({
+          suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Length,
+                            filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Length))
+                            },
+          error = function(e) e
+        )
+        
+        # Errors to NA
+        if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
 
-      out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value))
-    }
-  }) 
+        n <- n_condition_reporter(df,genes[i], conditions[1], conditions[2])
+
+
+        del_end <-  mean(filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position) - mean(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position)
+        del_tail <- mean(filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Len) - mean(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Len)
+
+        out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value,del_end,del_tail, n[1], n[2]))
+     }
+  }
 
   out<-out[-1,] # Remove crap line
   # Change to numeric types
@@ -604,6 +656,27 @@ stat_matrix_maker <- function(df, gene, con1, con2){
                 p.end_position_total=p.end_position_total,
                 p.mat_tail_len=tail_len_matrix,
                 p.tail_len_total=p.tail_len_total))
+}
+
+n_sample_reporter <- function(df, gene){
+  # Utility to report number of observed reads for a particular gene by sample
+  out <- df %>% 
+    filter(Gene_Name==gene) %>% 
+    group_by(Grouping) %>% 
+    summarise(n = sum(Count))
+  out
+}
+
+n_condition_reporter <- function(df, gene, con1, con2){
+  out <- df %>% 
+    filter(Gene_Name==gene) %>% 
+    group_by(Grouping) %>% 
+    summarise(n= sum(Count))
+  
+
+  return(c(filter(out, Grouping==con1)$n, filter(out, Grouping==con2)$n))
+  
+
 }
 
 ################### Pretty Making Functions ################

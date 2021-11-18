@@ -31,6 +31,7 @@ plot_server <- function(id, plt, plottype=""){
       }
       observeEvent(input$make_plot, {
         output$plot <- renderPlot({isolate(plt()$plot)})
+        output$n_table <- renderDT({isolate(plt()$n_table)}, rownames=F)
       })
       
       output$download_plot <- downloadHandler(
@@ -47,6 +48,7 @@ plot_server <- function(id, plt, plottype=""){
           write.csv(plt()$data, file, row.names=F)
         }
       )
+
     }
   )
 }
@@ -107,10 +109,10 @@ server <- function(input, output, session){
 
 ########## Candidate finder backend ##############
   output$can_con1 <- renderUI({
-    selectInput("can_con1", "Condition 1", input$sample_order)
+    selectInput("can_con1", "Condition 1", input$sample_order, selected=input$sample_order[1])
   })
   output$can_con2 <- renderUI({
-    selectInput("can_con2", "Condition 2", input$sample_order)
+    selectInput("can_con2", "Condition 2", input$sample_order, selected=input$sample_order[2])
   })
   
   output$candidates <- NULL
@@ -219,13 +221,16 @@ server <- function(input, output, session){
   
 #################### Statistics Page #######################
   output$con1 <- renderUI({
-    selectInput("con1", "Condition 1", input$sample_order)
+    selectInput("con1", "Condition 1", input$sample_order, selected=input$sample_order[1])
   })
   output$con2 <- renderUI({
-    selectInput("con2", "Condition 2", input$sample_order)
+    selectInput("con2", "Condition 2", input$sample_order, selected=input$sample_order[2])
   })
   
   observeEvent(input$get_stats, {
+    output$stat_gene_name <- renderUI({
+      h3(input$stats_gene_name)
+    })
     stats <- reactive({stat_matrix_maker(df(), isolate(input$stats_gene_name), isolate(input$con1), isolate(input$con2))})
     output$end_position_tab <- renderTable(stats()$p.mat_end_position, rownames=T, digits=-6)
     output$end_position_text <- renderText(stats()$p.end_position_total)
