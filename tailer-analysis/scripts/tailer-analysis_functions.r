@@ -8,6 +8,7 @@ library(ggthemes)
 library(lemon)
 library(ggprism)
 library(grid)
+library(stringr)
 
 
 #################### Graphing Functions ##########################
@@ -310,7 +311,14 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
 
     for (nuc in c("A", "C", "G", "T")) {
       # Find frequency of each nucleotide at each position
-      frequency <- sum(filter(df, Sample==sample, substr(Tail_Sequence, 1, 1) == nuc)$Count)/total
+      #frequency <- sum(filter(df, Sample==sample, substr(Tail_Sequence, 1, 1) == nuc)$Count)/total
+      frequency <- mean(
+        unlist(
+          lapply(
+            filter(df, Sample==sample)$Tail_Sequence, 
+            fraction_nuc_tail, pattern=nuc)
+              )
+            )
       # Add to out df
       out <- rbind(out, c(sample, filter(df, Sample==sample)$Grouping[1], nuc, frequency))
       }
@@ -374,7 +382,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, m
 		
 
     #Axes
-    scale_y_continuous(name="\nFrequency\n",
+    scale_y_continuous(name="\nAvg #Nucs Per Tail\n",
       limits=c(ymin-0.01, ymax), 
       position = "right",
       guide = guide_prism_minor()) + # minor ticks
@@ -678,7 +686,10 @@ n_condition_reporter <- function(df, gene, con1, con2){
   
 
 }
-
+fraction_nuc_tail <- function(tail_sequence, pattern=""){
+  if (is.na(tail_sequence)) return(0)
+  str_count(tail_sequence, pattern=pattern) /  nchar(tail_sequence)
+}
 ################### Pretty Making Functions ################
 common_theme <- function() { 
   theme_base() +
