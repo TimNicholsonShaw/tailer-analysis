@@ -296,7 +296,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
       return(list(data=data, plot=plt, n_table=n_sample_reporter(df, gene)))
 }
 
-tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=1, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
+tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=6, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
   if (multi_locus) df <- multimap_gene_subsetter(df, gene) # slower but more exhaustive subsetter
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handling for ensembl IDs
   else df <- filter(df, Gene_Name==gene) 
@@ -688,7 +688,7 @@ n_condition_reporter <- function(df, gene, con1, con2){
 }
 fraction_nuc_tail <- function(tail_sequence, pattern=""){
   if (is.na(tail_sequence)) return(0)
-  str_count(tail_sequence, pattern=pattern) /  nchar(tail_sequence)
+  str_count(tail_sequence, pattern=pattern)
 }
 ################### Pretty Making Functions ################
 common_theme <- function() { 
