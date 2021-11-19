@@ -113,7 +113,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     plt <- plt +   geom_point(data=out, aes(x=Pos+0.5, y=Total_Percentage))
   }
 
-  return(list(plot=plt, data=data_out, n_table=n_sample_reporter(df, gene)))
+  return(list(plot=plt, data=data_out, n_table=n_condition_reporter(df, gene, multimap=multi_locus)))
 }
 
 tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
@@ -194,7 +194,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
     #plt <- plt + geom_point(data=out[-1,], aes(x=Pos, y=reads_at_end))
   }
 
-  return(list(data=data, plot=plt, n_table=n_sample_reporter(df, gene)))
+  return(list(data=data, plot=plt, n_table=n_condition_reporter(df, gene, multimap=multi_locus)))
 }
 
 tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
@@ -293,7 +293,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
         guide = guide_prism_minor() # add minor ticks
 	    ) 
 
-      return(list(data=data, plot=plt, n_table=n_sample_reporter(df, gene)))
+      return(list(data=data, plot=plt, n_table=n_condition_reporter(df, gene, multimap=multi_locus)))
 }
 
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=6, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
@@ -400,7 +400,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=6, pdisplay=F, m
   }
 
 
-  return(list(data=data, plot=plt, n_table=n_sample_reporter(df, gene)))
+  return(list(data=data, plot=plt, n_table=n_condition_reporter(df, gene, multimap=multi_locus)))
 }
 
 ############## Helper Functions #####################
@@ -613,9 +613,11 @@ tail_end_matrix_to_df <- function(matrix, sample, condition){
   out
 }
 
-stat_matrix_maker <- function(df, gene, con1, con2){
-  df = filter(df, Gene_Name==gene) # Only looking at single gene
-                                  # Add option here for ensid
+stat_matrix_maker <- function(df, gene, con1, con2, multi_locus=F){
+  if (multi_locus) df <- multimap_gene_subsetter(df, gene) # slower but more exhaustive subsetter
+  else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handle ENSIDs
+  else df <- filter(df, Gene_Name==gene) 
+
   # Pulling out samples for the listed conditions
   samples1 = unique(filter(df, Grouping==con1)$Sample) 
   samples2 = unique(filter(df, Grouping==con2)$Sample)
@@ -678,14 +680,21 @@ n_sample_reporter <- function(df, gene){
   out
 }
 
-n_condition_reporter <- function(df, gene, con1, con2){
+n_condition_reporter <- function(df, gene, multimap=F){
+  if(multimap){
+    out <- multimap_gene_subsetter(df, gene) %>% 
+    group_by(Grouping) %>% 
+    summarise(n= sum(Count))
+  }
+  else{
   out <- df %>% 
     filter(Gene_Name==gene) %>% 
     group_by(Grouping) %>% 
     summarise(n= sum(Count))
+  }
   
 
-  return(c(filter(out, Grouping==con1)$n, filter(out, Grouping==con2)$n))
+  out
   
 
 }

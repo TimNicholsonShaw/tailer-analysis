@@ -86,7 +86,8 @@ ui_statistics_page <- fluidPage(
       uiOutput("con1"),
       uiOutput("con2"),
       textInput("stats_gene_name", "Gene Name"),
-      actionButton("get_stats", "Get Stats")
+      actionButton("get_stats", "Get Stats"),
+      checkboxInput("stat_multi_loc", "Multi Locus")
     ),
     mainPanel(
       uiOutput("stat_gene_name"),

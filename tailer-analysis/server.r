@@ -232,7 +232,7 @@ server <- function(input, output, session){
     output$stat_gene_name <- renderUI({
       h3(input$stats_gene_name)
     })
-    stats <- reactive({stat_matrix_maker(df(), isolate(input$stats_gene_name), isolate(input$con1), isolate(input$con2))})
+    stats <- reactive({stat_matrix_maker(df(), isolate(input$stats_gene_name), isolate(input$con1), isolate(input$con2), isolate(input$stat_multi_loc))})
     output$end_position_tab <- renderTable(stats()$p.mat_end_position, rownames=T, digits=-6)
     output$end_position_text <- renderText(stats()$p.end_position_total)
     output$tail_len_tab <- renderTable(stats()$p.mat_tail_len, rownames=T, digits=-6)
