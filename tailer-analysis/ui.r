@@ -11,8 +11,8 @@ options_ui <- function(id, dots=F, position=T, analysis_window=F, pdisplay=F, ma
     tags <- tagAppendChild(tags, numericInput(ns("x_max"), "Maximum Position", value=10))
   }
   
-  tags <- tagAppendChild(tags, numericInput(ns("y_min"), "Minimum Fraction", value=0))
-  tags <- tagAppendChild(tags, numericInput(ns("y_max"), "Maximum Fraction", value=1))
+  tags <- tagAppendChild(tags, numericInput(ns("y_min"), "Minimum Y-Value", value=0))
+  tags <- tagAppendChild(tags, numericInput(ns("y_max"), "Maximum Y-Value", value=1))
   
   if(analysis_window==T) {
     tags <- tagAppendChild(tags, numericInput(ns("analysis_min"), "Start of Analysis Window", value=-100))

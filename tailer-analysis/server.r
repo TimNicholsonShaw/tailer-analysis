@@ -43,7 +43,7 @@ plot_server <- function(id, plt, plottype=""){
         }
       )
       output$download_data <- downloadHandler(
-        filename=paste(input$gene_name, "_data", "csv", sep="."),
+        filename=paste(input$gene_name, "_data", ".csv", sep=""),
         content=function(file){
           write.csv(plt()$data, file, row.names=F)
         }
@@ -119,13 +119,14 @@ server <- function(input, output, session){
   
   #  reactive to hold candidates in
   observeEvent(input$find_cans_button, {
-  cans <- reactive({
-    discover_candidates(isolate(df()), min=isolate(input$min_cans), conditions=c(isolate(input$can_con1), isolate(input$can_con2)))
-    })
+
     output$candidates <- renderDT({
       isolate(cans())
     }, rownames=FALSE)
   
+  })
+  cans <- reactive({
+    discover_candidates(isolate(df()), min=isolate(input$min_cans), conditions=c(isolate(input$can_con1), isolate(input$can_con2)))
   })
   
   

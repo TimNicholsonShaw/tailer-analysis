@@ -349,7 +349,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=6, pdisplay=F, m
     }
     for (nuc in unique(out$Nuc)){
       temp_val <- t.test(filter(out, Nuc==nuc, Condition==conditions[1])$Frequency, filter(out, Nuc==nuc, Condition==conditions[2])$Frequency)$p.val
-      pvals <- append(pvals, temp_val)
+      pvals <- append(pvals, round(temp_val,3))
     }
   }
   ################ Plotting ##########################
@@ -473,13 +473,15 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
         incProgress(1/length(genes))
         # toss if it doesn't meet the minimum number of reads
         if (genes[i] == "None") next
-        if (nrow(filter(df, Grouping==conditions[1],Gene_Name==genes[i])) < min) next
-        if (nrow(filter(df, Grouping==conditions[2],Gene_Name==genes[i])) < min) next
+        con1 = filter(df, Grouping==conditions[1],Gene_Name==genes[i])
+        con2 = filter(df, Grouping==conditions[2],Gene_Name==genes[i])
+        if (nrow(con1) < min) next
+        if (nrow(con1) < min) next
 
 
         statistic_three_end <- tryCatch({
-          suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position,
-                            filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position))
+          suppressWarnings(ks.test(con1$End_Position,
+                            con2$End_Position))
                             },
           error = function(e) e
         )
@@ -489,8 +491,8 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
 
 
         statistic_tail_length <- tryCatch({
-          suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Length,
-                            filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Length))
+          suppressWarnings(ks.test(con1$Tail_Length,
+                            con2$Tail_Length))
                             },
           error = function(e) e
         )
@@ -498,12 +500,12 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
         # Errors to NA
         if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
         # report how many observations in each condition
-        n <- n_condition_reporter(df, genes[i], conditions[1], conditions[2])
+        n <- c(sum(con1$Count), sum(con2$Count))
 
         # calculate mean differences 
 
-        del_end <-  mean(filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position) - mean(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position)
-        del_tail <- mean(filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Len) - mean(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Len)
+        del_end <-  mean(con2$End_Position) - mean(con1$End_Position)
+        del_tail <- mean(con2$Tail_Len) - mean(con1$Tail_Len)
 
         out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value, del_end,del_tail, n[1], n[2]))
       }
@@ -514,14 +516,15 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
         # toss if it doesn't meet the minimum number of reads
         if (genes[i] == "None") next
 
-        # can probably speed this up by calling filter once per condition and saving to variable
-        if (nrow(filter(df, Grouping==conditions[1],Gene_Name==genes[i])) < min) next
-        if (nrow(filter(df, Grouping==conditions[2],Gene_Name==genes[i])) < min) next
+        con1 = filter(df, Grouping==conditions[1],Gene_Name==genes[i])
+        con2 = filter(df, Grouping==conditions[2],Gene_Name==genes[i])
+        if (nrow(con1) < min) next
+        if (nrow(con1) < min) next
 
 
         statistic_three_end <- tryCatch({
-          suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position,
-                            filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position))
+          suppressWarnings(ks.test(con1$End_Position,
+                            con2$End_Position))
                             },
           error = function(e) e
         )
@@ -531,8 +534,8 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
 
 
         statistic_tail_length <- tryCatch({
-          suppressWarnings(ks.test(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Length,
-                            filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Length))
+          suppressWarnings(ks.test(con1$Tail_Length,
+                            con2$Tail_Length))
                             },
           error = function(e) e
         )
@@ -540,11 +543,11 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
         # Errors to NA
         if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
 
-        n <- n_condition_reporter(df,genes[i], conditions[1], conditions[2])
+        n <- c(sum(con1$Count), sum(con2$Count))
 
 
-        del_end <-  mean(filter(df, Grouping==conditions[2],Gene_Name==genes[i])$End_Position) - mean(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$End_Position)
-        del_tail <- mean(filter(df, Grouping==conditions[2],Gene_Name==genes[i])$Tail_Len) - mean(filter(df, Grouping==conditions[1],Gene_Name==genes[i])$Tail_Len)
+        del_end <-  mean(con2$End_Position) - mean(con1$End_Position)
+        del_tail <- mean(con2$Tail_Len) - mean(con1$Tail_Len)
 
         out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value,del_end,del_tail, n[1], n[2]))
      }
