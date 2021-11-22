@@ -121,7 +121,7 @@ server <- function(input, output, session){
   observeEvent(input$find_cans_button, {
 
     output$candidates <- renderDT({
-      isolate(cans())
+      filter(cans(), pval_end_position <= input$pval_cutoff, abs(delta_end_pos)>=input$delN_cutoff)
     }, rownames=FALSE)
   
   })
@@ -230,13 +230,14 @@ server <- function(input, output, session){
   
   observeEvent(input$get_stats, {
     output$stat_gene_name <- renderUI({
-      h3(input$stats_gene_name)
+      h4(input$stats_gene_name)
     })
     stats <- reactive({stat_matrix_maker(df(), isolate(input$stats_gene_name), isolate(input$con1), isolate(input$con2), isolate(input$stat_multi_loc))})
     output$end_position_tab <- renderTable(stats()$p.mat_end_position, rownames=T, digits=-6)
     output$end_position_text <- renderText(stats()$p.end_position_total)
     output$tail_len_tab <- renderTable(stats()$p.mat_tail_len, rownames=T, digits=-6)
     output$tail_len_text <- renderText(stats()$p.tail_len_total)
+    output$n_df_table <- renderTable(stats()$n.df, digits=0)
     })
   
 

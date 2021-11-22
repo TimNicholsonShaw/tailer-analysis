@@ -72,11 +72,11 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
     ymax=1), 
 		linetype=0, 
 		fill="grey90", 
-		alpha=0.05) +
+		alpha=0.02) +
   
   # Step Plots for full tail and 3' end mapping only
-  geom_step() + 
-  geom_step(aes(x=Pos, y=three_end_avg), linetype=3) +
+  geom_step(size=.7) + 
+  geom_step(aes(x=Pos, y=three_end_avg), linetype=3, size=.7) +
 
   # Rectangle to denote post-transcriptional tailing
   geom_rect(aes(xmin=Pos, xmax=Pos+0.99,
@@ -557,6 +557,10 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
   # Change to numeric types
   out$pval_end_position <- as.numeric(out$pval_end_position)
   out$pval_PT_tail <- as.numeric(out$pval_PT_tail)
+  out$delta_end_pos <- as.numeric(out$delta_end_pos)
+  out$delta_PT_tail <- as.numeric(out$delta_PT_tail)
+  out$n_con1 <- as.numeric(out$n_con1)
+  out$n_con2 <- as.numeric(out$n_con2)
 
   out <- out[order(out$pval_end_position),]
   return (out)
@@ -637,6 +641,7 @@ stat_matrix_maker <- function(df, gene, con1, con2, multi_locus=F){
   colnames(end_position_matrix) <- custom_col_names
   rownames(end_position_matrix) <- custom_row_names
 
+
   tail_len_matrix <- matrix(ncol=length(samples1), nrow=length(samples2))
   rownames(tail_len_matrix) <- custom_col_names
   colnames(tail_len_matrix) <- custom_row_names
@@ -664,11 +669,26 @@ stat_matrix_maker <- function(df, gene, con1, con2, multi_locus=F){
   p.end_position_total <- suppressWarnings(ks.test(filter(df, Sample %in% samples1)$End_Position,filter(df, Sample %in% samples2)$End_Position)$p.value)
   p.tail_len_total <- suppressWarnings(ks.test(filter(df, Sample %in% samples1)$Tail_Len,filter(df, Sample %in% samples2)$Tail_Len)$p.value)
 
+  # Also return df of number of observations
+  con1_counts <- df %>% filter(Grouping==con1) %>%
+                    group_by(Sample) %>% 
+                    summarise(n = sum(Count))
+  con1_counts <- con1_counts$n
 
-  return (list(p.mat_end_position=end_position_matrix, 
-                p.end_position_total=p.end_position_total,
-                p.mat_tail_len=tail_len_matrix,
-                p.tail_len_total=p.tail_len_total))
+  con2_counts <- df %>% filter(Grouping==con2) %>%
+                    group_by(Sample) %>% 
+                    summarise(n = sum(Count))
+  con2_counts <- con2_counts$n
+
+
+  n.df <- data.frame(Condition=c(custom_col_names, custom_row_names), n=c(con1_counts, con2_counts))
+  return (list(
+    p.mat_end_position=end_position_matrix, 
+    p.end_position_total=p.end_position_total,
+    p.mat_tail_len=tail_len_matrix,
+    p.tail_len_total=p.tail_len_total,
+    n.df=n.df
+                ))
 }
 
 n_sample_reporter <- function(df, gene){

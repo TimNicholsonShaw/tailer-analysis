@@ -70,6 +70,8 @@ ui_candidate_finder <- fluidPage(
             numericInput("min_cans", "Minimum Reads For a Candidate", 10, min=1),
             uiOutput("can_con1"),
             uiOutput("can_con2"),
+            numericInput("pval_cutoff", "p-value cutoff", value=1),
+            numericInput("delN_cutoff", "Average tail difference cutoff", value=0),
             actionButton("find_cans_button", "Find Candidates"),
             downloadButton("download_cans", "Download Data")
         ),
@@ -83,9 +85,9 @@ ui_candidate_finder <- fluidPage(
 ui_statistics_page <- fluidPage(
   sidebarLayout(
     sidebarPanel(
+      textInput("stats_gene_name", "Gene Name"),
       uiOutput("con1"),
       uiOutput("con2"),
-      textInput("stats_gene_name", "Gene Name"),
       actionButton("get_stats", "Get Stats"),
       checkboxInput("stat_multi_loc", "Multi Locus")
     ),
@@ -99,7 +101,10 @@ ui_statistics_page <- fluidPage(
       p("Tail Length KS-test Matrix"),
       tableOutput("tail_len_tab"),
       p("Pooled Tail Length KS-test"),
-      textOutput("tail_len_text")
+      textOutput("tail_len_text"),
+      p(" "),
+      p("Number of Observations"),
+      tableOutput("n_df_table")
       )
     )
 )
