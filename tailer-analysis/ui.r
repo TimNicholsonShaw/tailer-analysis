@@ -41,7 +41,7 @@ plot_ui <- function(id){
       column(6, numericInput(ns("width"), "Plot Width", value=3500))
     ),
     fluidRow(
-      DTOutput(ns("n_table"))
+      tableOutput(ns("n_table"))
     )
   )
 }

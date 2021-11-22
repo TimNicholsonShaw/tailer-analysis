@@ -695,26 +695,26 @@ n_sample_reporter <- function(df, gene){
   # Utility to report number of observed reads for a particular gene by sample
   out <- df %>% 
     filter(Gene_Name==gene) %>% 
-    group_by(Grouping) %>% 
+    group_by(Sample, Grouping) %>% 
     summarise(n = sum(Count))
-  out
+  out[-1]
 }
 
 n_condition_reporter <- function(df, gene, multimap=F){
   if(multimap){
     out <- multimap_gene_subsetter(df, gene) %>% 
-    group_by(Grouping) %>% 
+    group_by(Sample, Grouping) %>% 
     summarise(n= sum(Count))
   }
   else{
   out <- df %>% 
     filter(Gene_Name==gene) %>% 
-    group_by(Grouping) %>% 
+    group_by(Sample, Grouping) %>% 
     summarise(n= sum(Count))
   }
   
 
-  out
+  out[-1]
   
 
 }

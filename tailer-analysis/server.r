@@ -31,7 +31,7 @@ plot_server <- function(id, plt, plottype=""){
       }
       observeEvent(input$make_plot, {
         output$plot <- renderPlot({isolate(plt()$plot)})
-        output$n_table <- renderDT({isolate(plt()$n_table)}, rownames=F)
+        output$n_table <- renderTable({isolate(plt()$n_table)}, digits=0)
       })
       
       output$download_plot <- downloadHandler(
