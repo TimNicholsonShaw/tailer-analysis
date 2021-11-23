@@ -312,13 +312,13 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=6, pdisplay=F, m
     for (nuc in c("A", "C", "G", "T")) {
       # Find frequency of each nucleotide at each position
       #frequency <- sum(filter(df, Sample==sample, substr(Tail_Sequence, 1, 1) == nuc)$Count)/total
-      frequency <- mean(
+      frequency <- sum(
         unlist(
           lapply(
             filter(df, Sample==sample)$Tail_Sequence, 
             fraction_nuc_tail, pattern=nuc)
               )
-            )
+            ) / sum(filter(df, Sample==sample)$Count)
       # Add to out df
       out <- rbind(out, c(sample, filter(df, Sample==sample)$Grouping[1], nuc, frequency))
       }
@@ -382,7 +382,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=6, pdisplay=F, m
 		
 
     #Axes
-    scale_y_continuous(name="\nAvg #Nucs Per Tail\n",
+    scale_y_continuous(name="\nAvg #Nucs Per RNA\n",
       limits=c(ymin-0.01, ymax), 
       position = "right",
       guide = guide_prism_minor()) + # minor ticks

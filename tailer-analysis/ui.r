@@ -1,6 +1,6 @@
 # Modular Pieces
 
-options_ui <- function(id, dots=F, position=T, analysis_window=F, pdisplay=F, mature_end=F){
+options_ui <- function(id, dots=F, position=T, analysis_window=F, pdisplay=F, mature_end=F, PT_tail=F){
   ns <- NS(id)
   tags<- tagList(
     textInput(ns("gene_name"), "Gene Name"),
@@ -10,10 +10,16 @@ options_ui <- function(id, dots=F, position=T, analysis_window=F, pdisplay=F, ma
     tags <- tagAppendChild(tags, numericInput(ns("x_min"), "Minimum Position", value=-10))
     tags <- tagAppendChild(tags, numericInput(ns("x_max"), "Maximum Position", value=10))
   }
-  
-  tags <- tagAppendChild(tags, numericInput(ns("y_min"), "Minimum Y-Value", value=0))
-  tags <- tagAppendChild(tags, numericInput(ns("y_max"), "Maximum Y-Value", value=1))
-  
+  if (PT_tail){
+    tags <- tagAppendChild(tags, numericInput(ns("y_min"), "Minimum Y-Value", value=0))
+    tags <- tagAppendChild(tags, numericInput(ns("y_max"), "Maximum Y-Value", value=5))
+  }
+  else{
+    tags <- tagAppendChild(tags, numericInput(ns("y_min"), "Minimum Y-Value", value=0))
+    tags <- tagAppendChild(tags, numericInput(ns("y_max"), "Maximum Y-Value", value=1))
+
+  }
+
   if(analysis_window==T) {
     tags <- tagAppendChild(tags, numericInput(ns("analysis_min"), "Start of Analysis Window", value=-100))
     tags <- tagAppendChild(tags, numericInput(ns("analysis_max"), "End of Analysis Window", value=100))
@@ -46,10 +52,10 @@ plot_ui <- function(id){
   )
 }
 
-whole_plot_page_ui <- function(id, dots=F, pdisplay=F, analysis_window=F, mature_end=F, position=T){
+whole_plot_page_ui <- function(id, dots=F, pdisplay=F, analysis_window=F, mature_end=F, position=T, PT_tail=F){
   fluidPage(
     sidebarLayout(
-      sidebarPanel(options_ui(id, dots=dots, pdisplay=pdisplay, analysis_window=analysis_window, mature_end=mature_end, position=position)),
+      sidebarPanel(options_ui(id, dots=dots, pdisplay=pdisplay, analysis_window=analysis_window, mature_end=mature_end, position=position, PT_tail=PT_tail)),
       mainPanel(plot_ui(id))
     )
   )
@@ -67,13 +73,15 @@ ui_files <- fluidPage(
 ui_candidate_finder <- fluidPage(
     sidebarLayout(
         sidebarPanel(
-            numericInput("min_cans", "Minimum Reads For a Candidate", 10, min=1),
             uiOutput("can_con1"),
             uiOutput("can_con2"),
-            numericInput("pval_cutoff", "p-value cutoff", value=1),
-            numericInput("delN_cutoff", "Average tail difference cutoff", value=0),
             actionButton("find_cans_button", "Find Candidates"),
-            downloadButton("download_cans", "Download Data")
+            downloadButton("download_cans", "Download Data"),
+            p(" "),
+            p("Dynamically updated options:"),
+            numericInput("min_cans", "Minimum Reads For a Candidate", 10, min=1),
+            numericInput("delN_cutoff", "Average End_Position Difference Cutoff", value=0),
+            numericInput("pval_cutoff", "p-value End_Position Cutoff", value=1)
         ),
         mainPanel(
             DTOutput("candidates") %>% withSpinner(color="#0dc5c1"),
@@ -123,7 +131,7 @@ ui <- fluidPage(
         tabPanel("Tail Bar Graph", whole_plot_page_ui("tail_bar", analysis_window=T, mature_end=T)),
         tabPanel("Cumulative Plot", whole_plot_page_ui("cum_plot", dots=T, analysis_window=T, mature_end=T)),
         tabPanel("Tail Logo Plot", whole_plot_page_ui("tail_logo", analysis_window=T, mature_end=T)),
-        tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T, analysis_window=T, mature_end=T, position=F)),
+        tabPanel("Post-Transcriptional Tailing", whole_plot_page_ui("pt_tail", pdisplay=T, analysis_window=T, mature_end=T, position=F, PT_tail=T)),
         tabPanel("Statistics", ui_statistics_page)
     )
 )

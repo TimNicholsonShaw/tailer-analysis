@@ -121,12 +121,12 @@ server <- function(input, output, session){
   observeEvent(input$find_cans_button, {
 
     output$candidates <- renderDT({
-      filter(cans(), pval_end_position <= input$pval_cutoff, abs(delta_end_pos)>=input$delN_cutoff)
+      filter(cans(), pval_end_position <= input$pval_cutoff, abs(delta_end_pos)>=input$delN_cutoff, n_con1 >= input$min_cans, n_con2 >= input$min_cans)
     }, rownames=FALSE)
   
   })
   cans <- reactive({
-    discover_candidates(isolate(df()), min=isolate(input$min_cans), conditions=c(isolate(input$can_con1), isolate(input$can_con2)))
+    discover_candidates(isolate(df()), min=1, conditions=c(isolate(input$can_con1), isolate(input$can_con2)))
   })
   
   
