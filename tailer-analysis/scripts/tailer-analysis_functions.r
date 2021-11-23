@@ -563,6 +563,17 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
   out$n_con2 <- as.numeric(out$n_con2)
 
   out <- out[order(out$pval_end_position),]
+
+  # reorder columns and make more user readable
+  out <- select(out, Gene, delta_end_pos, pval_end_position, delta_PT_tail, pval_PT_tail, n_con1, n_con2) %>%
+    rename(
+      "Δ End Position"=delta_end_pos, 
+      "p-value End Position"=pval_end_position,
+      "Δ PT Tail"=delta_PT_tail,
+      "p-value PT Tail"=pval_PT_tail,
+      "# Reads Condition 1"=n_con1,
+      "# Reads Condition 2"=n_con2
+      )
   return (out)
   
 

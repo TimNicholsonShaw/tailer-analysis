@@ -80,8 +80,8 @@ ui_candidate_finder <- fluidPage(
             p(" "),
             p("Dynamically updated options:"),
             numericInput("min_cans", "Minimum Reads For a Candidate", 10, min=1),
-            numericInput("delN_cutoff", "Average End_Position Difference Cutoff", value=0),
-            numericInput("pval_cutoff", "p-value End_Position Cutoff", value=1)
+            numericInput("delN_cutoff", "Average Δ End PositionCutoff", value=0),
+            numericInput("pval_cutoff", "p-value End Position Cutoff", value=1)
         ),
         mainPanel(
             DTOutput("candidates") %>% withSpinner(color="#0dc5c1"),

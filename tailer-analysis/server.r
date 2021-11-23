@@ -121,7 +121,7 @@ server <- function(input, output, session){
   observeEvent(input$find_cans_button, {
 
     output$candidates <- renderDT({
-      filter(cans(), pval_end_position <= input$pval_cutoff, abs(delta_end_pos)>=input$delN_cutoff, n_con1 >= input$min_cans, n_con2 >= input$min_cans)
+      filter(cans(), cans()$"p-value End Position" <= input$pval_cutoff, abs(cans()$"Δ End Position")>=input$delN_cutoff, cans()$"# Reads Condition 1" >= input$min_cans, cans()$"# Reads Condition 2" >= input$min_cans)
     }, rownames=FALSE)
   
   })
