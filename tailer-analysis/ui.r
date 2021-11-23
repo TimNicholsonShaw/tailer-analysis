@@ -101,17 +101,17 @@ ui_statistics_page <- fluidPage(
     ),
     mainPanel(
       uiOutput("stat_gene_name"),
-      p("End Position KS-test Matrix"),
+      p(strong("End Position KS-test Matrix")),
       tableOutput("end_position_tab"),
-      p("Pooled End Position KS-test"),
+      p(strong("Pooled End Position KS-test")),
       textOutput("end_position_text"),
       p(" "),
-      p("Tail Length KS-test Matrix"),
+      p(strong("Tail Length KS-test Matrix")),
       tableOutput("tail_len_tab"),
-      p("Pooled Tail Length KS-test"),
+      p(strong("Pooled Tail Length KS-test")),
       textOutput("tail_len_text"),
       p(" "),
-      p("Number of Observations"),
+      p(strong("Number of Observations")),
       tableOutput("n_df_table")
       )
     )

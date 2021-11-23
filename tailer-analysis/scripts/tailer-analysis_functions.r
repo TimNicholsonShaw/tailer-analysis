@@ -15,6 +15,7 @@ library(stringr)
 cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, show_legend=TRUE, ymin=0, ymax=1, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
   # Only interested in a single gene
   # Maybe add some flexibility for multi-mappers
+  if (grepl("|", gene, fixed=T)) multi_locus=T #if entering multiple genes, automatically does multilocus search
   if (multi_locus) df <- multimap_gene_subsetter(df, gene) #optional slower more exhaustivesubsetter
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handling for ENSIDs
   else df <- filter(df, Gene_Name==gene) 
@@ -117,6 +118,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
 }
 
 tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax=1, AUCGcolors=AUCGcolors, show_legend=TRUE, dots=FALSE, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
+  if (grepl("|", gene, fixed=T)) multi_locus=T #if entering multiple genes, automatically does multilocus search
   if (multi_locus) df <- multimap_gene_subsetter(df, gene) # slower but more exhaustive subsetter
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handle ENSIDs
   else df <- filter(df, Gene_Name==gene) 
@@ -198,7 +200,7 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
 }
 
 tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order="") {
-
+  if (grepl("|", gene, fixed=T)) multi_locus=T #if entering multiple genes, automatically does multilocus search
   ############ data pre-processing #################
   if (multi_locus) df <- multimap_gene_subsetter(df, gene) # slower but more exhaustive subsetter
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handling for ensembl IDs
@@ -297,6 +299,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
 }
 
 tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=6, pdisplay=F, multi_locus=F, analysis_min=-100, analysis_max=100, mature_end=0, order=""){
+  if (grepl("|", gene, fixed=T)) multi_locus=T #if entering multiple genes, automatically does multilocus search
   if (multi_locus) df <- multimap_gene_subsetter(df, gene) # slower but more exhaustive subsetter
   else if(startsWith(gene, "ENS")) df <- filter(df, EnsID==gene) # handling for ensembl IDs
   else df <- filter(df, Gene_Name==gene) 
@@ -644,27 +647,32 @@ stat_matrix_maker <- function(df, gene, con1, con2, multi_locus=F){
   custom_col_names <- c()
   custom_row_names <- c()
   for (i in 1:length(samples1)){
-    custom_col_names <- append(custom_col_names, paste0(con1, i))
+    custom_col_names <- append(custom_col_names, paste0(con1,"_", i))
   }
   for (i in 1:length(samples2)){
-    custom_row_names <- append(custom_row_names, paste0(con2, i))
+    custom_row_names <- append(custom_row_names, paste0(con2,"_", i))
   }
   colnames(end_position_matrix) <- custom_col_names
   rownames(end_position_matrix) <- custom_row_names
 
 
   tail_len_matrix <- matrix(ncol=length(samples1), nrow=length(samples2))
-  rownames(tail_len_matrix) <- custom_col_names
-  colnames(tail_len_matrix) <- custom_row_names
+  colnames(tail_len_matrix) <- custom_col_names
+  rownames(tail_len_matrix) <- custom_row_names
 
-
+  print(length(samples1))
+  print(length(samples2))
   
   for (i in c(1:length(samples1))){
     for (j in c(1:length(samples2))){
       a <- filter(df, Sample==samples1[i])$End_Position
       b <- filter(df, Sample==samples2[j])$End_Position
 
-      end_position_matrix[i,j] <- suppressWarnings(ks.test(a,b)$p.value)
+      p <- suppressWarnings(ks.test(a,b)$p.value)
+
+      if (p<1e-50) p="<1e-50"
+
+      end_position_matrix[i,j] <- p
     }
   }
 
@@ -673,12 +681,16 @@ stat_matrix_maker <- function(df, gene, con1, con2, multi_locus=F){
       a <- filter(df, Sample==samples1[i])$Tail_Len
       b <- filter(df, Sample==samples2[j])$Tail_Len
 
-      tail_len_matrix[i,j] <- suppressWarnings(ks.test(a,b)$p.value)
+      p <- suppressWarnings(ks.test(a,b)$p.value)
+      if (p<1e-50) p="<1e-50"
+      tail_len_matrix[i,j] <- p
     }
   }
 
   p.end_position_total <- suppressWarnings(ks.test(filter(df, Sample %in% samples1)$End_Position,filter(df, Sample %in% samples2)$End_Position)$p.value)
+  if (p.end_position_total < 1e-50) p.end_position_total <- "<1e-50"
   p.tail_len_total <- suppressWarnings(ks.test(filter(df, Sample %in% samples1)$Tail_Len,filter(df, Sample %in% samples2)$Tail_Len)$p.value)
+  if (p.tail_len_total < 1e-50) p.tail_len_total <- "<1e-50"
 
   # Also return df of number of observations
   con1_counts <- df %>% filter(Grouping==con1) %>%
@@ -702,32 +714,38 @@ stat_matrix_maker <- function(df, gene, con1, con2, multi_locus=F){
                 ))
 }
 
-n_sample_reporter <- function(df, gene){
+n_sample_reporter <- function(df, gene, multimap=F){
   # Utility to report number of observed reads for a particular gene by sample
-  out <- df %>% 
-    filter(Gene_Name==gene) %>% 
-    group_by(Sample, Grouping) %>% 
-    summarise(n = sum(Count))
-  out[-1]
+  if (multimap) temp_df <- multimap_gene_subsetter(df, gene)
+  else temp_df <- filter(df, Gene_Name==gene)
+  groupings <- unique(df$Grouping)
+  sample_designations <- c()
+  totals <- c()
+  for (i in 1:length(groupings)){
+    samples <- unique(filter(df, Grouping==groupings[i])$Sample)
+    for (j in 1:length(samples)){
+      sample_designations <- c(sample_designations, paste0(groupings[i], "_", j))
+      totals <- c(totals, sum(filter(temp_df, Grouping==groupings[i], Sample==samples[j])$Count))
+    }
+  }
+
+  return (data.frame(Sample=sample_designations, n=totals))
 }
 
 n_condition_reporter <- function(df, gene, multimap=F){
-  if(multimap){
-    out <- multimap_gene_subsetter(df, gene) %>% 
-    group_by(Sample, Grouping) %>% 
-    summarise(n= sum(Count))
+  if (multimap) temp_df <- multimap_gene_subsetter(df, gene)
+  else temp_df <- filter(df, Gene_Name==gene)
+  groupings <- unique(df$Grouping)
+  sample_designations <- c()
+  totals <- c()
+  for (i in 1:length(groupings)){
+    samples <- unique(filter(df, Grouping==groupings[i])$Sample)
+    for (j in 1:length(samples)){
+      sample_designations <- c(sample_designations, paste0(groupings[i], "_", j))
+      totals <- c(totals, sum(filter(temp_df, Grouping==groupings[i], Sample==samples[j])$Count))
+    }
   }
-  else{
-  out <- df %>% 
-    filter(Gene_Name==gene) %>% 
-    group_by(Sample, Grouping) %>% 
-    summarise(n= sum(Count))
-  }
-  
-
-  out[-1]
-  
-
+  return (data.frame(Sample=sample_designations, n=totals))
 }
 fraction_nuc_tail <- function(tail_sequence, pattern=""){
   if (is.na(tail_sequence)) return(0)
