@@ -442,6 +442,7 @@ dfBuilder <- function(files, grouping){
                     Grouping="")
   for (i in c(1:length(files))){
     temp_df <- read_csv(files[i]) 
+    if ("Sequence" %in% names(temp_df)) temp_df <- select(temp_df, -Sequence) # prevent problems with sequence containing tail files
     temp_df$Sample <- files[i] # Add file name as sample name, maybe do prefix?
     temp_df$Grouping <- grouping[i] # Add sample metadata
 
