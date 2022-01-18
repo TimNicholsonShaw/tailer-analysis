@@ -492,7 +492,6 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
         
         #Erros to NA
         if(inherits(statistic_three_end, "error")) statistic_three_end$p.value <- NA
-        else statistic_three_end <- round(statistic_three_end, 3)
 
 
         statistic_tail_length <- tryCatch({
@@ -504,14 +503,13 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
         
         # Errors to NA
         if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
-        else statistic_tail_length <- round(statistic_tail_length, 3)
         # report how many observations in each condition
         n <- c(sum(con1$Count), sum(con2$Count))
 
         # calculate mean differences 
 
-        del_end <-  round(mean(con2$End_Position) - mean(con1$End_Position), 3)
-        del_tail <- round(mean(con2$Tail_Len) - mean(con1$Tail_Len), 3)
+        del_end <-  mean(con2$End_Position) - mean(con1$End_Position)
+        del_tail <- mean(con2$Tail_Len) - mean(con1$Tail_Len)
 
         out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value, del_end,del_tail, n[1], n[2]))
       }
@@ -561,10 +559,12 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
 
   out<-out[-1,] # Remove crap line
   # Change to numeric types
-  out$pval_end_position <- as.numeric(out$pval_end_position)
-  out$pval_PT_tail <- as.numeric(out$pval_PT_tail)
-  out$delta_end_pos <- as.numeric(out$delta_end_pos)
-  out$delta_PT_tail <- as.numeric(out$delta_PT_tail)
+  sig_digs <- 5 #number of significant digits
+
+  out$pval_end_position <- round(as.numeric(out$pval_end_position), sig_digs)
+  out$pval_PT_tail <- round(as.numeric(out$pval_PT_tail),sig_digs)
+  out$delta_end_pos <- round(as.numeric(out$delta_end_pos), sig_digs)
+  out$delta_PT_tail <- round(as.numeric(out$delta_PT_tail), sig_digs)
   out$n_con1 <- as.numeric(out$n_con1)
   out$n_con2 <- as.numeric(out$n_con2)
 
