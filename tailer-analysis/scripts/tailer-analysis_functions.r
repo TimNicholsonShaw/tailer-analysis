@@ -492,6 +492,7 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
         
         #Erros to NA
         if(inherits(statistic_three_end, "error")) statistic_three_end$p.value <- NA
+        else statistic_three_end <- round(statistic_three_end, 3)
 
 
         statistic_tail_length <- tryCatch({
@@ -503,13 +504,14 @@ discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
         
         # Errors to NA
         if(inherits(statistic_tail_length, "error")) statistic_tail_length$p.value <- NA
+        else statistic_tail_length <- round(statistic_tail_length, 3)
         # report how many observations in each condition
         n <- c(sum(con1$Count), sum(con2$Count))
 
         # calculate mean differences 
 
-        del_end <-  mean(con2$End_Position) - mean(con1$End_Position)
-        del_tail <- mean(con2$Tail_Len) - mean(con1$Tail_Len)
+        del_end <-  round(mean(con2$End_Position) - mean(con1$End_Position), 3)
+        del_tail <- round(mean(con2$Tail_Len) - mean(con1$Tail_Len), 3)
 
         out <- rbind(out, c(genes[i], statistic_three_end$p.value, statistic_tail_length$p.value, del_end,del_tail, n[1], n[2]))
       }
