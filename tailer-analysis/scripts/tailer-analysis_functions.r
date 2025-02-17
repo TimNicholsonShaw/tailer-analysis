@@ -43,7 +43,7 @@ cumulativeTailPlotter <- function(df, gene, start=-10, stop=10, gimme=FALSE, sho
   out$Total_Percentage <- as.numeric(out$Total_Percentage)
   out$Three_End_Percentage <- as.numeric(out$Three_End_Percentage)
   out$Pos <- as.numeric(out$Pos)
-  if (order!="") out$Condition <- factor(out$Condition, levels=order)
+  out$Condition <- factor(out$Condition, levels=order)
   out=out[-1,] # drop that weird first row
 
 
@@ -138,7 +138,9 @@ tail_bar_grapher <- function(df, gene, start=-10, stop=10, gimme=F, ymin=0, ymax
   }
   
   out <- out[-1,]
-  if (order!="") out$Condition <- factor(out$Condition, levels=order)
+  
+
+  out$Condition <- factor(out$Condition, levels=order)
   if (gimme){ # for debugging
     return(out)
   }
@@ -249,7 +251,7 @@ tail_logo_grapher <- function(df, gene, xmin=1, xmax=10, ymin=0, ymax=1, gimme=F
   out$Nuc <- recode_factor(as.factor(out$Nuc), "T"="U") # Fix T -> U
 
   conditions <- c(unique(out$Condition))
-  if (order!="") conditions<-order
+  if (length(order)>0) conditions<-order
 
   for (i in 1:length(conditions)){
     plot_df <- out %>% 
@@ -332,7 +334,7 @@ tail_pt_nuc_grapher <- function(df, gene, gimme=F, ymin=0, ymax=6, pdisplay=F, m
   out$Frequency <- as.numeric(out$Frequency)
   out$Nuc <- recode_factor(out$Nuc, T="U")
   out$Nuc <- factor(out$Nuc, levels=c("A", "C", "G", "U"))
-  if (order!="") out$Condition <- factor(out$Condition, levels=order)
+  if (length(order)>0) out$Condition <- factor(out$Condition, levels=order)
 
   out_summed <-out %>%
     group_by(Condition, Nuc) %>% 
@@ -456,20 +458,18 @@ dfBuilder <- function(files, grouping){
 }
 discover_candidates <- function(df, min=1, conditions=NA, isShiny=T){
 
-  if (is.na(conditions)){
+  if (length(conditions)<1){
     conditions <- unique(df$Grouping)
-    }
+  }
   if (length(conditions) != 2){ # Statistics is hard
     return("Candidate discovery doesn't support this number of conditions :(, try with just 2")
   }
   genes <- unique(df$Gene_Name)
-
   pb <- progress_bar$new(total=length(genes),
           format = "Finding candidates [:bar] :percent | :elapsed | Estimated eta: :eta",
           clear=FALSE)
 
   out <- data.frame(Gene=NA, pval_end_position=NA, pval_PT_tail=NA,delta_end_pos=NA, delta_PT_tail=NA, n_con1=NA, n_con2=NA)
-  
   if (isShiny){
     withProgress( message="Finding Candidates", value=0, { # Progress bar wrapper for shiny
       for (i in 1:length(genes)) {

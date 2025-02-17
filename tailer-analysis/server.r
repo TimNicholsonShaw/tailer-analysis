@@ -30,6 +30,7 @@ plot_server <- function(id, plt, plottype=""){
         flag <-T
       }
       observeEvent(input$make_plot, {
+
         output$plot <- renderPlot({isolate(plt()$plot)})
         output$n_table <- renderTable({isolate(plt()$n_table)}, digits=0)
       })
@@ -119,7 +120,6 @@ server <- function(input, output, session){
   
   #  reactive to hold candidates in
   observeEvent(input$find_cans_button, {
-
     output$candidates <- renderDT({
       filter(cans(), cans()$"p-value End Position" <= input$pval_cutoff, abs(cans()$"Δ End Position")>=input$delN_cutoff, cans()$"# Reads Condition 1" >= input$min_cans, cans()$"# Reads Condition 2" >= input$min_cans)
     }, rownames=FALSE)
@@ -128,6 +128,8 @@ server <- function(input, output, session){
   cans <- reactive({
     discover_candidates(isolate(df()), min=1, conditions=c(isolate(input$can_con1), isolate(input$can_con2)))
   })
+  
+  
   
   
   
